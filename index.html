@@ -291,6 +291,12 @@
             font-size: 2rem;
             color: #4f6df5;
             margin-bottom: 15px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .error-message {
@@ -300,6 +306,10 @@
             border-radius: 5px;
             margin-bottom: 20px;
             text-align: center;
+        }
+        
+        .error-message i {
+            margin-right: 8px;
         }
         
         .no-data {
@@ -313,6 +323,39 @@
             margin-bottom: 15px;
             color: #ccc;
         }
+        
+        .token-error {
+            background-color: #fff3e0;
+            color: #ef6c00;
+            border-left: 4px solid #ef6c00;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .token-error i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-transferido {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-nao-transferido {
+            background-color: #ffebee;
+            color: #c62828;
+        }
     </style>
 </head>
 <body>
@@ -322,32 +365,35 @@
             <p>Monitore conversas e transferências em tempo real</p>
         </header>
         
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i class="fas fa-users"></i>
-                <h3>Total de Conversas</h3>
-                <div class="stat-value" id="total-conversas">0</div>
+        <div id="dashboard-content" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Total de Conversas</h3>
+                    <div class="stat-value" id="total-conversas">0</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exchange-alt"></i>
+                    <h3>Transferidos</h3>
+                    <div class="stat-value" id="total-transferidos">0</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-times-circle"></i>
+                    <h3>Não Transferidos</h3>
+                    <div class="stat-value" id="total-nao-transferidos">0</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <i class="fas fa-exchange-alt"></i>
-                <h3>Transferidos</h3>
-                <div class="stat-value" id="total-transferidos">0</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-times-circle"></i>
-                <h3>Não Transferidos</h3>
-                <div class="stat-value" id="total-nao-transferidos">0</div>
+            
+            <div class="table-container">
+                <div id="table-content">
+                    <!-- Conteúdo da tabela será carregado aqui -->
+                </div>
             </div>
         </div>
         
-        <div class="table-container">
-            <div id="table-content">
-                <!-- Conteúdo da tabela será carregado aqui -->
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Carregando dados...</p>
-                </div>
-            </div>
+        <div id="initial-loading" class="loading">
+            <i class="fas fa-spinner"></i>
+            <p>Verificando autenticação...</p>
         </div>
     </div>
     
@@ -393,26 +439,36 @@
                     </div>
                     <div class="form-group">
                         <label for="tipo-problema">Tipo de Problema</label>
-                        <select id="tipo-problema">
+                        <select id="tipo-problema" required>
                             <option value="">Selecione um tipo</option>
                             <option value="tecnico">Problema Técnico</option>
                             <option value="atendimento">Problema no Atendimento</option>
                             <option value="informacao">Informação Incorreta</option>
+                            <option value="transferencia">Problema na Transferência</option>
                             <option value="outro">Outro</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="descricao">Descrição do Problema</label>
-                        <textarea id="descricao" placeholder="Descreva detalhadamente o problema encontrado..."></textarea>
+                        <textarea id="descricao" placeholder="Descreva detalhadamente o problema encontrado..." required></textarea>
                     </div>
-                    <button type="submit" class="btn-submit">Enviar Relatório</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-paper-plane"></i> Enviar Relatório
+                    </button>
                 </form>
             </div>
         </div>
     </div>
     
     <script>
-        // Elementos do DOM
+        // =================== CONFIGURAÇÃO ===================
+        // URL do seu webhook backend
+        const WEBHOOK_URL = 'https://seu-backend.com/webhook'; // SUBSTITUA COM SUA URL
+        const REPORT_WEBHOOK_URL = 'https://seu-backend.com/report'; // SUBSTITUA COM SUA URL
+        
+        // =================== ELEMENTOS DO DOM ===================
+        const dashboardContentEl = document.getElementById('dashboard-content');
+        const initialLoadingEl = document.getElementById('initial-loading');
         const totalConversasEl = document.getElementById('total-conversas');
         const totalTransferidosEl = document.getElementById('total-transferidos');
         const totalNaoTransferidosEl = document.getElementById('total-nao-transferidos');
@@ -428,13 +484,14 @@
         const tipoProblemaEl = document.getElementById('tipo-problema');
         const descricaoEl = document.getElementById('descricao');
         
-        // Variáveis de estado
+        // =================== VARIÁVEIS DE ESTADO ===================
         let currentToken = null;
         let conversationsData = [];
-        let currentConversationId = null;
+        let currentConversationIndex = null;
         
-        // Verificar token na URL ao carregar a página
+        // =================== INICIALIZAÇÃO ===================
         document.addEventListener('DOMContentLoaded', function() {
+            // Verificar token na URL
             const urlParams = new URLSearchParams(window.location.search);
             const tokenFromUrl = urlParams.get('token');
             
@@ -442,151 +499,154 @@
                 currentToken = tokenFromUrl;
                 loadDashboardData();
             } else {
-                // Mostrar modal para solicitar token
+                // Mostrar modal para solicitar token após breve delay
                 setTimeout(() => {
+                    initialLoadingEl.style.display = 'none';
                     tokenModalEl.classList.add('active');
                 }, 500);
             }
             
-            // Configurar evento para botão de token
-            btnTokenEl.addEventListener('click', function() {
-                const token = tokenInputEl.value.trim();
-                if (token) {
-                    currentToken = token;
-                    // Atualizar URL com o token
-                    const newUrl = window.location.origin + window.location.pathname + '?token=' + encodeURIComponent(token);
-                    window.history.pushState({}, '', newUrl);
-                    
-                    // Fechar modal e carregar dados
-                    tokenModalEl.classList.remove('active');
-                    loadDashboardData();
-                } else {
-                    alert('Por favor, insira um token válido.');
+            // Configurar eventos
+            setupEventListeners();
+        });
+        
+        // =================== CONFIGURAR EVENTOS ===================
+        function setupEventListeners() {
+            // Botão para submeter token
+            btnTokenEl.addEventListener('click', handleTokenSubmit);
+            
+            // Permitir Enter no campo de token
+            tokenInputEl.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleTokenSubmit();
                 }
             });
             
-            // Configurar evento para fechar modal de reporte
+            // Fechar modal de reporte
             closeReportModalEl.addEventListener('click', function() {
                 reportModalEl.classList.remove('active');
             });
             
-            // Configurar envio do formulário de problema
-            problemFormEl.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const problemaData = {
-                    conversaId: conversaIdEl.value,
-                    contato: contatoEl.value,
-                    tipoProblema: tipoProblemaEl.value,
-                    descricao: descricaoEl.value,
-                    token: currentToken
-                };
-                
-                // Aqui você faria a requisição para enviar o problema
-                // Simulando envio
-                console.log('Dados do problema a ser enviado:', problemaData);
-                
-                // Mostrar confirmação
-                alert('Problema reportado com sucesso! Entraremos em contato em breve.');
-                
-                // Fechar modal e limpar formulário
-                reportModalEl.classList.remove('active');
-                problemFormEl.reset();
-            });
-            
-            // Permitir enviar token pressionando Enter
-            tokenInputEl.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    btnTokenEl.click();
-                }
-            });
-        });
+            // Enviar formulário de problema
+            problemFormEl.addEventListener('submit', handleProblemReport);
+        }
         
-        // Função para carregar dados do dashboard
+        // =================== MANIPULADOR DE TOKEN ===================
+        function handleTokenSubmit() {
+            const token = tokenInputEl.value.trim();
+            if (!token) {
+                alert('Por favor, insira um token válido.');
+                return;
+            }
+            
+            currentToken = token;
+            
+            // Atualizar URL com o token
+            const newUrl = window.location.origin + window.location.pathname + '?token=' + encodeURIComponent(token);
+            window.history.pushState({}, '', newUrl);
+            
+            // Fechar modal e carregar dados
+            tokenModalEl.classList.remove('active');
+            initialLoadingEl.style.display = 'block';
+            dashboardContentEl.style.display = 'none';
+            
+            loadDashboardData();
+        }
+        
+        // =================== CARREGAR DADOS DO DASHBOARD ===================
         async function loadDashboardData() {
             try {
-                // Aqui você faria a requisição POST para o seu webhook
-                // Como estamos simulando, vou usar dados mockados
+                // Fazer requisição POST para o webhook com token no body
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token: currentToken })
+                });
                 
-                // Simular delay da requisição
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // Verificar se a resposta foi bem sucedida
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
                 
-                // Dados mockados para demonstração
-                const mockData = [
-                    {
-                        contato: "João Silva",
-                        conversa: "Cliente: Olá, gostaria de informações sobre meu pedido.\nAtendente: Bom dia! Claro, pode me informar o número do pedido?\nCliente: É o #12345\nAtendente: Verifiquei aqui, seu pedido está em processamento e será enviado amanhã.",
-                        transferencia: "Transferido"
-                    },
-                    {
-                        contato: "Maria Santos",
-                        conversa: "Cliente: Preciso cancelar minha assinatura.\nAtendente: Entendo, posso ajudá-la com isso. Poderia me informar o motivo do cancelamento?\nCliente: Estou insatisfeita com o serviço.\nAtendente: Lamento ouvir isso. Vou processar o cancelamento para você.",
-                        transferencia: "Não Transferido"
-                    },
-                    {
-                        contato: "Carlos Oliveira",
-                        conversa: "Cliente: Tem estoque do produto X?\nAtendente: Boa tarde! Sim, temos em estoque. Deseja realizar o pedido?\nCliente: Sim, por favor.\nAtendente: Perfeito! Vou te transferir para o setor de vendas.",
-                        transferencia: "Transferido"
-                    },
-                    {
-                        contato: "Ana Costa",
-                        conversa: "Cliente: Meu produto chegou com defeito.\nAtendente: Sinto muito pelo ocorrido. Vou te auxiliar com a troca.\nCliente: Obrigada.\nAtendente: Preciso de algumas informações para iniciar o processo de troca.",
-                        transferencia: "Não Transferido"
-                    },
-                    {
-                        contato: "Pedro Almeida",
-                        conversa: "Cliente: Gostaria de saber sobre as opções de pagamento.\nAtendente: Oferecemos cartão de crédito, boleto e PIX.\nCliente: E parcelamento em quantas vezes?\nAtendente: Até 12x no cartão, com juros a partir da 7ª parcela.",
-                        transferencia: "Transferido"
-                    },
-                    {
-                        contato: "Fernanda Lima",
-                        conversa: "Cliente: Esqueci minha senha, como recupero?\nAtendente: Vou te enviar um link para redefinição de senha no seu e-mail cadastrado.\nCliente: Ok, obrigada.",
-                        transferencia: "Não Transferido"
-                    }
-                ];
+                const data = await response.json();
                 
-                // Em um cenário real, você usaria:
-                // const response = await fetch('SEU_WEBHOOK_AQUI', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //     },
-                //     body: JSON.stringify({ token: currentToken })
-                // });
-                // const data = await response.json();
+                // Verificar se os dados são válidos
+                if (!Array.isArray(data)) {
+                    throw new Error('Formato de dados inválido');
+                }
                 
-                // Para demonstração, usaremos os dados mockados
-                const data = mockData;
+                // Esconder loading e mostrar dashboard
+                initialLoadingEl.style.display = 'none';
+                dashboardContentEl.style.display = 'block';
+                
+                // Armazenar e processar dados
                 conversationsData = data;
-                
-                // Atualizar estatísticas
-                updateStats(data);
-                
-                // Atualizar tabela
-                updateTable(data);
+                updateDashboard(data);
                 
             } catch (error) {
                 console.error('Erro ao carregar dados:', error);
-                showErrorMessage('Erro ao carregar dados. Verifique o token e tente novamente.');
+                
+                // Mostrar erro e pedir token novamente
+                initialLoadingEl.style.display = 'none';
+                dashboardContentEl.style.display = 'none';
+                
+                // Mostrar modal de token com mensagem de erro
+                tokenModalEl.classList.add('active');
+                tokenInputEl.value = currentToken || '';
+                
+                // Adicionar mensagem de erro no modal
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'token-error';
+                errorMsg.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>Token inválido ou expirado</strong><br>
+                        ${error.message}. Por favor, insira um token válido.
+                    </div>
+                `;
+                
+                // Inserir mensagem de erro antes do botão
+                const modalBody = tokenModalEl.querySelector('.modal-body');
+                const submitBtn = modalBody.querySelector('.btn-submit');
+                modalBody.insertBefore(errorMsg, submitBtn);
+                
+                // Limpar token atual
+                currentToken = null;
             }
         }
         
-        // Função para atualizar as estatísticas
+        // =================== ATUALIZAR DASHBOARD ===================
+        function updateDashboard(data) {
+            // Atualizar estatísticas
+            updateStats(data);
+            
+            // Atualizar tabela
+            updateTable(data);
+        }
+        
         function updateStats(data) {
             // Total de conversas
             const totalConversas = data.length;
             totalConversasEl.textContent = totalConversas;
             
             // Total de transferidos
-            const totalTransferidos = data.filter(item => item.transferencia === "Transferido").length;
+            const totalTransferidos = data.filter(item => 
+                item.transferencia && item.transferencia.toLowerCase().includes('transferido')
+            ).length;
             totalTransferidosEl.textContent = totalTransferidos;
             
             // Total de não transferidos
-            const totalNaoTransferidos = data.filter(item => item.transferencia === "Não Transferido").length;
+            const totalNaoTransferidos = data.filter(item => 
+                item.transferencia && (
+                    item.transferencia.toLowerCase().includes('não') || 
+                    item.transferencia.toLowerCase().includes('nao')
+                )
+            ).length;
             totalNaoTransferidosEl.textContent = totalNaoTransferidos;
         }
         
-        // Função para atualizar a tabela
         function updateTable(data) {
             if (data.length === 0) {
                 tableContentEl.innerHTML = `
@@ -613,26 +673,32 @@
             `;
             
             data.forEach((item, index) => {
-                const transferenciaClass = item.transferencia === "Transferido" ? "transferido" : "nao-transferido";
-                const transferenciaIcon = item.transferencia === "Transferido" ? "fa-check-circle" : "fa-times-circle";
-                const transferenciaColor = item.transferencia === "Transferido" ? "#4CAF50" : "#F44336";
+                const transferencia = item.transferencia || 'Não informado';
+                const isTransferido = transferencia.toLowerCase().includes('transferido');
+                const statusClass = isTransferido ? 'status-transferido' : 'status-nao-transferido';
+                const statusText = isTransferido ? 'Transferido' : 'Não Transferido';
+                
+                // Limitar o texto da conversa para visualização
+                const conversaPreview = item.conversa ? 
+                    (item.conversa.length > 200 ? item.conversa.substring(0, 200) + '...' : item.conversa) :
+                    'Sem histórico';
                 
                 tableHTML += `
                     <tr>
-                        <td><strong>${item.contato}</strong></td>
+                        <td><strong>${item.contato || 'Sem nome'}</strong></td>
                         <td>
-                            <div class="conversa-content">
-                                ${item.conversa.replace(/\n/g, '<br>')}
+                            <div class="conversa-content" title="${item.conversa || ''}">
+                                ${conversaPreview.replace(/\n/g, '<br>')}
                             </div>
                         </td>
                         <td>
-                            <span style="color: ${transferenciaColor}; font-weight: 500;">
-                                <i class="fas ${transferenciaIcon}"></i> ${item.transferencia}
+                            <span class="status-badge ${statusClass}">
+                                ${statusText}
                             </span>
                         </td>
                         <td>
                             <button class="btn-report" onclick="openReportModal(${index})">
-                                <i class="fas fa-exclamation-triangle"></i> Reportar Problema
+                                <i class="fas fa-exclamation-triangle"></i> Reportar
                             </button>
                         </td>
                     </tr>
@@ -647,14 +713,14 @@
             tableContentEl.innerHTML = tableHTML;
         }
         
-        // Função para abrir modal de reporte de problema
+        // =================== REPORTAR PROBLEMA ===================
         function openReportModal(index) {
+            currentConversationIndex = index;
             const conversation = conversationsData[index];
-            currentConversationId = index + 1;
             
             // Preencher dados no formulário
             conversaIdEl.value = `CONV-${String(index + 1).padStart(3, '0')}`;
-            contatoEl.value = conversation.contato;
+            contatoEl.value = conversation.contato || 'Não informado';
             
             // Limpar outros campos
             tipoProblemaEl.value = "";
@@ -664,16 +730,62 @@
             reportModalEl.classList.add('active');
         }
         
-        // Função para mostrar mensagem de erro
-        function showErrorMessage(message) {
-            tableContentEl.innerHTML = `
-                <div class="error-message">
-                    <p><i class="fas fa-exclamation-circle"></i> ${message}</p>
-                </div>
-            `;
+        async function handleProblemReport(e) {
+            e.preventDefault();
+            
+            const conversation = conversationsData[currentConversationIndex];
+            
+            const reportData = {
+                report: {
+                    conversaId: conversaIdEl.value,
+                    contatoOriginal: conversation.contato,
+                    conversaOriginal: conversation.conversa,
+                    transferenciaOriginal: conversation.transferencia,
+                    tipoProblema: tipoProblemaEl.value,
+                    descricao: descricaoEl.value,
+                    dataReport: new Date().toISOString()
+                }
+            };
+            
+            try {
+                // Desabilitar botão para evitar múltiplos envios
+                const submitBtn = problemFormEl.querySelector('.btn-submit');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+                submitBtn.disabled = true;
+                
+                // Enviar relatório para o webhook
+                const response = await fetch(REPORT_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(reportData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erro ao enviar relatório: ${response.status}`);
+                }
+                
+                // Mostrar confirmação
+                alert('Problema reportado com sucesso! O time técnico foi notificado.');
+                
+                // Fechar modal e limpar formulário
+                reportModalEl.classList.remove('active');
+                problemFormEl.reset();
+                
+            } catch (error) {
+                console.error('Erro ao reportar problema:', error);
+                alert('Erro ao enviar relatório. Por favor, tente novamente.');
+            } finally {
+                // Reabilitar botão
+                const submitBtn = problemFormEl.querySelector('.btn-submit');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
         }
         
-        // Permitir acesso global à função openReportModal
+        // =================== EXPORTAR FUNÇÕES GLOBAIS ===================
         window.openReportModal = openReportModal;
     </script>
 </body>
