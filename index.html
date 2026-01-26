@@ -123,11 +123,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             const tokenFromUrl = urlParams.get('token');
 
+            // Versão otimizada para GitHub Pages
             if (tokenFromUrl) {
                 currentToken = tokenFromUrl;
-                // Limpar token da URL para segurança (opcional, mas recomendado)
-                const newUrl = window.location.origin + window.location.pathname;
-                window.history.replaceState({}, document.title, newUrl);
+                // Remove o token da URL sem recarregar a página para manter a segurança
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: cleanUrl}, '', cleanUrl);
                 loadDashboardData();
             } else {
                 document.getElementById('initial-loading').style.display = 'none';
