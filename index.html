@@ -3,790 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Conversas</title>
+    <title>Dashboard de Conversas IA - Helena CRM</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        /* MANTENDO TODO O SEU ESTILO ORIGINAL */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f5f7fa; color: #333; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: linear-gradient(135deg, #4f6df5 0%, #3a56d6 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+        .stat-card { background: white; padding: 25px 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); text-align: center; transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card i { font-size: 2.5rem; margin-bottom: 15px; color: #4f6df5; }
+        .stat-value { font-size: 2.2rem; font-weight: bold; color: #3a56d6; }
+        .table-container { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); margin-bottom: 40px; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background-color: #4f6df5; color: white; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+        .status-qualificado { background-color: #e8f5e9; color: #2e7d32; }
+        .status-n-qualificado { background-color: #ffebee; color: #c62828; }
+        .temp-quente { color: #d32f2f; font-weight: bold; }
+        .temp-morno { color: #f57c00; font-weight: bold; }
         
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-        }
+        /* Modais */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal { background: white; width: 90%; max-width: 500px; border-radius: 10px; overflow: hidden; }
+        .modal-header { background: #4f6df5; color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .modal-body { padding: 25px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn-submit { background: #4f6df5; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer; width: 100%; }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #4f6df5 0%, #3a56d6 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-        
-        header p {
-            opacity: 0.9;
-            font-size: 0.95rem;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 25px 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stat-card i {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            color: #4f6df5;
-        }
-        
-        .stat-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            color: #555;
-        }
-        
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #3a56d6;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            margin-bottom: 40px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        thead {
-            background-color: #4f6df5;
-            color: white;
-        }
-        
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        th {
-            font-weight: 600;
-        }
-        
-        tbody tr:hover {
-            background-color: #f9fafc;
-        }
-        
-        .conversa-content {
-            max-width: 400px;
-            max-height: 100px;
-            overflow-y: auto;
-            padding: 8px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        
-        .btn-report {
-            background-color: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
-        }
-        
-        .btn-report:hover {
-            background-color: #ff5252;
-        }
-        
-        /* Modal para formulário de problema */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-        
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .modal {
-            background: white;
-            width: 90%;
-            max-width: 500px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        
-        .modal-header {
-            background: #4f6df5;
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-header h3 {
-            font-size: 1.3rem;
-        }
-        
-        .modal-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            line-height: 1;
-        }
-        
-        .modal-body {
-            padding: 25px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #555;
-        }
-        
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        
-        .btn-submit {
-            background-color: #4f6df5;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-            transition: background-color 0.3s;
-        }
-        
-        .btn-submit:hover {
-            background-color: #3a56d6;
-        }
-        
-        /* Modal para token */
-        .token-modal {
-            background: white;
-            width: 90%;
-            max-width: 400px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        
-        .token-modal .modal-body {
-            text-align: center;
-        }
-        
-        .token-icon {
-            font-size: 3rem;
-            color: #4f6df5;
-            margin-bottom: 15px;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            table {
-                display: block;
-                overflow-x: auto;
-            }
-            
-            th, td {
-                padding: 12px 10px;
-            }
-            
-            .conversa-content {
-                max-width: 250px;
-            }
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        
-        .loading i {
-            font-size: 2rem;
-            color: #4f6df5;
-            margin-bottom: 15px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .error-message {
-            background-color: #ffebee;
-            color: #c62828;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .error-message i {
-            margin-right: 8px;
-        }
-        
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #777;
-        }
-        
-        .no-data i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: #ccc;
-        }
-        
-        .token-error {
-            background-color: #fff3e0;
-            color: #ef6c00;
-            border-left: 4px solid #ef6c00;
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .token-error i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        
-        .status-transferido {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-        }
-        
-        .status-nao-transferido {
-            background-color: #ffebee;
-            color: #c62828;
-        }
+        .loading { text-align: center; padding: 40px; }
+        .fa-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-comments"></i> Dashboard de Conversas</h1>
-            <p>Monitore conversas e transferências em tempo real</p>
+            <h1><i class="fas fa-robot"></i> Dashboard Atendimento IA</h1>
+            <p>Monitoramento de Leads e Qualificação de Pneus em Tempo Real</p>
         </header>
-        
+
+        <div id="initial-loading" class="loading">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p style="margin-top:15px">Aguardando Autenticação...</p>
+        </div>
+
         <div id="dashboard-content" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <i class="fas fa-users"></i>
-                    <h3>Total de Conversas</h3>
+                    <i class="fas fa-comments"></i>
+                    <h3>Total Conversas</h3>
                     <div class="stat-value" id="total-conversas">0</div>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-exchange-alt"></i>
-                    <h3>Transferidos</h3>
-                    <div class="stat-value" id="total-transferidos">0</div>
+                    <i class="fas fa-fire"></i>
+                    <h3>Leads Quentes</h3>
+                    <div class="stat-value" id="total-quentes">0</div>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-times-circle"></i>
-                    <h3>Não Transferidos</h3>
-                    <div class="stat-value" id="total-nao-transferidos">0</div>
+                    <i class="fas fa-thermometer-half"></i>
+                    <h3>Leads Mornos</h3>
+                    <div class="stat-value" id="total-mornos">0</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-user-slash"></i>
+                    <h3>Não Qualificados</h3>
+                    <div class="stat-value" id="total-n-qualificados">0</div>
                 </div>
             </div>
-            
+
             <div class="table-container">
-                <div id="table-content">
-                    <!-- Conteúdo da tabela será carregado aqui -->
-                </div>
-            </div>
-        </div>
-        
-        <div id="initial-loading" class="loading">
-            <i class="fas fa-spinner"></i>
-            <p>Verificando autenticação...</p>
-        </div>
-    </div>
-    
-    <!-- Modal para token -->
-    <div class="modal-overlay" id="token-modal">
-        <div class="token-modal">
-            <div class="modal-header">
-                <h3>Acesso Restrito</h3>
-            </div>
-            <div class="modal-body">
-                <div class="token-icon">
-                    <i class="fas fa-key"></i>
-                </div>
-                <p>Para acessar esta dashboard, você precisa fornecer um token de autenticação válido.</p>
-                <div class="form-group" style="margin-top: 20px;">
-                    <label for="token-input">Token de Acesso</label>
-                    <input type="text" id="token-input" placeholder="Digite o token...">
-                </div>
-                <button class="btn-submit" id="btn-token">Acessar Dashboard</button>
-                <p style="margin-top: 15px; font-size: 0.9rem; color: #777;">
-                    <i class="fas fa-info-circle"></i> O token deve ser fornecido na URL como parâmetro ?token=SEU_TOKEN
-                </p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal para reportar problema -->
-    <div class="modal-overlay" id="report-modal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3>Reportar Problema</h3>
-                <button class="modal-close" id="close-report-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="problem-form">
-                    <div class="form-group">
-                        <label for="conversa-id">ID da Conversa</label>
-                        <input type="text" id="conversa-id" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="contato">Contato</label>
-                        <input type="text" id="contato" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="tipo-problema">Tipo de Problema</label>
-                        <select id="tipo-problema" required>
-                            <option value="">Selecione um tipo</option>
-                            <option value="tecnico">Problema Técnico</option>
-                            <option value="atendimento">Problema no Atendimento</option>
-                            <option value="informacao">Informação Incorreta</option>
-                            <option value="transferencia">Problema na Transferência</option>
-                            <option value="outro">Outro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="descricao">Descrição do Problema</label>
-                        <textarea id="descricao" placeholder="Descreva detalhadamente o problema encontrado..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn-submit">
-                        <i class="fas fa-paper-plane"></i> Enviar Relatório
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-        // =================== CONFIGURAÇÃO ===================
-        // URL do seu webhook backend
-        const WEBHOOK_URL = 'https://seu-backend.com/webhook'; // SUBSTITUA COM SUA URL
-        const REPORT_WEBHOOK_URL = 'https://seu-backend.com/report'; // SUBSTITUA COM SUA URL
-        
-        // =================== ELEMENTOS DO DOM ===================
-        const dashboardContentEl = document.getElementById('dashboard-content');
-        const initialLoadingEl = document.getElementById('initial-loading');
-        const totalConversasEl = document.getElementById('total-conversas');
-        const totalTransferidosEl = document.getElementById('total-transferidos');
-        const totalNaoTransferidosEl = document.getElementById('total-nao-transferidos');
-        const tableContentEl = document.getElementById('table-content');
-        const tokenModalEl = document.getElementById('token-modal');
-        const tokenInputEl = document.getElementById('token-input');
-        const btnTokenEl = document.getElementById('btn-token');
-        const reportModalEl = document.getElementById('report-modal');
-        const closeReportModalEl = document.getElementById('close-report-modal');
-        const problemFormEl = document.getElementById('problem-form');
-        const conversaIdEl = document.getElementById('conversa-id');
-        const contatoEl = document.getElementById('contato');
-        const tipoProblemaEl = document.getElementById('tipo-problema');
-        const descricaoEl = document.getElementById('descricao');
-        
-        // =================== VARIÁVEIS DE ESTADO ===================
-        let currentToken = null;
-        let conversationsData = [];
-        let currentConversationIndex = null;
-        
-        // =================== INICIALIZAÇÃO ===================
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar token na URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const tokenFromUrl = urlParams.get('token');
-            
-            if (tokenFromUrl) {
-                currentToken = tokenFromUrl;
-                loadDashboardData();
-            } else {
-                // Mostrar modal para solicitar token após breve delay
-                setTimeout(() => {
-                    initialLoadingEl.style.display = 'none';
-                    tokenModalEl.classList.add('active');
-                }, 500);
-            }
-            
-            // Configurar eventos
-            setupEventListeners();
-        });
-        
-        // =================== CONFIGURAR EVENTOS ===================
-        function setupEventListeners() {
-            // Botão para submeter token
-            btnTokenEl.addEventListener('click', handleTokenSubmit);
-            
-            // Permitir Enter no campo de token
-            tokenInputEl.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    handleTokenSubmit();
-                }
-            });
-            
-            // Fechar modal de reporte
-            closeReportModalEl.addEventListener('click', function() {
-                reportModalEl.classList.remove('active');
-            });
-            
-            // Enviar formulário de problema
-            problemFormEl.addEventListener('submit', handleProblemReport);
-        }
-        
-        // =================== MANIPULADOR DE TOKEN ===================
-        function handleTokenSubmit() {
-            const token = tokenInputEl.value.trim();
-            if (!token) {
-                alert('Por favor, insira um token válido.');
-                return;
-            }
-            
-            currentToken = token;
-            
-            // Atualizar URL com o token
-            const newUrl = window.location.origin + window.location.pathname + '?token=' + encodeURIComponent(token);
-            window.history.pushState({}, '', newUrl);
-            
-            // Fechar modal e carregar dados
-            tokenModalEl.classList.remove('active');
-            initialLoadingEl.style.display = 'block';
-            dashboardContentEl.style.display = 'none';
-            
-            loadDashboardData();
-        }
-        
-        // =================== CARREGAR DADOS DO DASHBOARD ===================
-        async function loadDashboardData() {
-            try {
-                // Fazer requisição POST para o webhook com token no body
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ token: currentToken })
-                });
-                
-                // Verificar se a resposta foi bem sucedida
-                if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Verificar se os dados são válidos
-                if (!Array.isArray(data)) {
-                    throw new Error('Formato de dados inválido');
-                }
-                
-                // Esconder loading e mostrar dashboard
-                initialLoadingEl.style.display = 'none';
-                dashboardContentEl.style.display = 'block';
-                
-                // Armazenar e processar dados
-                conversationsData = data;
-                updateDashboard(data);
-                
-            } catch (error) {
-                console.error('Erro ao carregar dados:', error);
-                
-                // Mostrar erro e pedir token novamente
-                initialLoadingEl.style.display = 'none';
-                dashboardContentEl.style.display = 'none';
-                
-                // Mostrar modal de token com mensagem de erro
-                tokenModalEl.classList.add('active');
-                tokenInputEl.value = currentToken || '';
-                
-                // Adicionar mensagem de erro no modal
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'token-error';
-                errorMsg.innerHTML = `
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <div>
-                        <strong>Token inválido ou expirado</strong><br>
-                        ${error.message}. Por favor, insira um token válido.
-                    </div>
-                `;
-                
-                // Inserir mensagem de erro antes do botão
-                const modalBody = tokenModalEl.querySelector('.modal-body');
-                const submitBtn = modalBody.querySelector('.btn-submit');
-                modalBody.insertBefore(errorMsg, submitBtn);
-                
-                // Limpar token atual
-                currentToken = null;
-            }
-        }
-        
-        // =================== ATUALIZAR DASHBOARD ===================
-        function updateDashboard(data) {
-            // Atualizar estatísticas
-            updateStats(data);
-            
-            // Atualizar tabela
-            updateTable(data);
-        }
-        
-        function updateStats(data) {
-            // Total de conversas
-            const totalConversas = data.length;
-            totalConversasEl.textContent = totalConversas;
-            
-            // Total de transferidos
-            const totalTransferidos = data.filter(item => 
-                item.transferencia && item.transferencia.toLowerCase().includes('transferido')
-            ).length;
-            totalTransferidosEl.textContent = totalTransferidos;
-            
-            // Total de não transferidos
-            const totalNaoTransferidos = data.filter(item => 
-                item.transferencia && (
-                    item.transferencia.toLowerCase().includes('não') || 
-                    item.transferencia.toLowerCase().includes('nao')
-                )
-            ).length;
-            totalNaoTransferidosEl.textContent = totalNaoTransferidos;
-        }
-        
-        function updateTable(data) {
-            if (data.length === 0) {
-                tableContentEl.innerHTML = `
-                    <div class="no-data">
-                        <i class="fas fa-inbox"></i>
-                        <h3>Nenhuma conversa encontrada</h3>
-                        <p>Não há dados para exibir no momento.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            let tableHTML = `
                 <table>
                     <thead>
                         <tr>
+                            <th>Data/Hora</th>
                             <th>Contato</th>
-                            <th>Conversa</th>
-                            <th>Transferência</th>
+                            <th>Marca/Pneu</th>
+                            <th>Medida</th>
+                            <th>Qualificação</th>
+                            <th>Temperatura</th>
                             <th>Ação</th>
                         </tr>
                     </thead>
-                    <tbody>
-            `;
-            
-            data.forEach((item, index) => {
-                const transferencia = item.transferencia || 'Não informado';
-                const isTransferido = transferencia.toLowerCase().includes('transferido');
-                const statusClass = isTransferido ? 'status-transferido' : 'status-nao-transferido';
-                const statusText = isTransferido ? 'Transferido' : 'Não Transferido';
-                
-                // Limitar o texto da conversa para visualização
-                const conversaPreview = item.conversa ? 
-                    (item.conversa.length > 200 ? item.conversa.substring(0, 200) + '...' : item.conversa) :
-                    'Sem histórico';
-                
-                tableHTML += `
-                    <tr>
-                        <td><strong>${item.contato || 'Sem nome'}</strong></td>
-                        <td>
-                            <div class="conversa-content" title="${item.conversa || ''}">
-                                ${conversaPreview.replace(/\n/g, '<br>')}
-                            </div>
-                        </td>
-                        <td>
-                            <span class="status-badge ${statusClass}">
-                                ${statusText}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn-report" onclick="openReportModal(${index})">
-                                <i class="fas fa-exclamation-triangle"></i> Reportar
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += `
-                    </tbody>
+                    <tbody id="table-content"></tbody>
                 </table>
-            `;
-            
-            tableContentEl.innerHTML = tableHTML;
-        }
-        
-        // =================== REPORTAR PROBLEMA ===================
-        function openReportModal(index) {
-            currentConversationIndex = index;
-            const conversation = conversationsData[index];
-            
-            // Preencher dados no formulário
-            conversaIdEl.value = `CONV-${String(index + 1).padStart(3, '0')}`;
-            contatoEl.value = conversation.contato || 'Não informado';
-            
-            // Limpar outros campos
-            tipoProblemaEl.value = "";
-            descricaoEl.value = "";
-            
-            // Mostrar modal
-            reportModalEl.classList.add('active');
-        }
-        
-        async function handleProblemReport(e) {
-            e.preventDefault();
-            
-            const conversation = conversationsData[currentConversationIndex];
-            
-            const reportData = {
-                report: {
-                    conversaId: conversaIdEl.value,
-                    contatoOriginal: conversation.contato,
-                    conversaOriginal: conversation.conversa,
-                    transferenciaOriginal: conversation.transferencia,
-                    tipoProblema: tipoProblemaEl.value,
-                    descricao: descricaoEl.value,
-                    dataReport: new Date().toISOString()
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="token-modal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header"><h3>Acesso Restrito</h3></div>
+            <div class="modal-body" style="text-align:center">
+                <i class="fas fa-key fa-3x" style="color:#4f6df5; margin-bottom:15px"></i>
+                <p>Insira seu Token da Helena CRM para acessar os dados.</p>
+                <div class="form-group" style="margin-top:20px">
+                    <input type="password" id="token-input" placeholder="Digite o token...">
+                </div>
+                <button class="btn-submit" id="btn-token">Acessar Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO DE NEGÓCIO
+        const MARCAS = ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE'];
+        const QUALIFICADORES = ['PNEU', 'BALANCEAMENTO', 'ALINHAMENTO', 'RODA', 'CAMBAGEM', 'SUSPENSAO', 'BORRACHARIA'];
+        const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'INSTALAR', 'COMPRAR', 'ESTOU INDO', '15 DIAS'];
+
+        let currentToken = null;
+        let processedConversations = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+
+            if (tokenFromUrl) {
+                currentToken = tokenFromUrl;
+                // Limpar token da URL para segurança (opcional, mas recomendado)
+                const newUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+                loadDashboardData();
+            } else {
+                document.getElementById('initial-loading').style.display = 'none';
+                document.getElementById('token-modal').classList.add('active');
+            }
+
+            document.getElementById('btn-token').addEventListener('click', () => {
+                const input = document.getElementById('token-input').value.trim();
+                if(input) {
+                    currentToken = input;
+                    document.getElementById('token-modal').classList.remove('active');
+                    document.getElementById('initial-loading').style.display = 'block';
+                    loadDashboardData();
                 }
-            };
-            
+            });
+        });
+
+        async function loadDashboardData() {
             try {
-                // Desabilitar botão para evitar múltiplos envios
-                const submitBtn = problemFormEl.querySelector('.btn-submit');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-                submitBtn.disabled = true;
+                const headers = { 
+                    'Authorization': `Bearer ${currentToken}`,
+                    'accept': 'application/json' 
+                };
+
+                // 1. Buscar Sessões (Listar Conversas)
+                const resSessions = await fetch('https://api.helena.run/chat/v2/session?PageSize=40&OrderDirection=DESCENDING', { headers });
+                if (!resSessions.ok) throw new Error("Falha na autenticação");
                 
-                // Enviar relatório para o webhook
-                const response = await fetch(REPORT_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(reportData)
-                });
+                const sessions = await resSessions.json();
                 
-                if (!response.ok) {
-                    throw new Error(`Erro ao enviar relatório: ${response.status}`);
+                // Filtro: Apenas conversas que passaram pelo Bot
+                const botSessions = sessions.items.filter(s => s.botId !== null);
+                
+                let stats = { quente: 0, morno: 0, n_qual: 0 };
+                let results = [];
+
+                for (const session of botSessions) {
+                    // 2. Buscar Mensagens para qualificar o lead
+                    const resMsgs = await fetch(`https://api.helena.run/chat/v1/message?SessionId=${session.id}&PageSize=20`, { headers });
+                    const msgs = await resMsgs.json();
+                    
+                    // Texto bruto do cliente
+                    const fullText = msgs.items
+                        .filter(m => !m.botId) // Mensagens que NÃO são do bot
+                        .map(m => m.text?.toUpperCase() || "")
+                        .join(" ");
+
+                    // Lógica de Qualificação
+                    const isQualificado = QUALIFICADORES.some(q => fullText.includes(q)) || MARCAS.some(m => fullText.includes(m));
+                    let status = "NÃO QUALIFICADO";
+                    let temp = "-";
+                    
+                    if (isQualificado) {
+                        status = "QUALIFICADO";
+                        const isQuente = TERMOS_QUENTE.some(t => fullText.includes(t));
+                        temp = isQuente ? "QUENTE" : "MORNO";
+                        if (isQuente) stats.quente++; else stats.morno++;
+                    } else {
+                        stats.n_qual++;
+                    }
+
+                    // Regex de Pneu (175/70R14, 205/55R16 etc)
+                    const pneuMatch = fullText.match(/\d{3}\/\d{2}\s?R\d{2}/);
+                    const marcaDestaque = MARCAS.find(m => fullText.includes(m)) || "Multimarcas";
+
+                    results.push({
+                        id: session.id,
+                        data: new Date(session.createdAt).toLocaleString('pt-BR'),
+                        contato: session.contactDetails?.displayName || "Desconhecido",
+                        marca: marcaDestaque,
+                        medida: pneuMatch ? pneuMatch[0] : "N/A",
+                        status: status,
+                        temp: temp
+                    });
                 }
-                
-                // Mostrar confirmação
-                alert('Problema reportado com sucesso! O time técnico foi notificado.');
-                
-                // Fechar modal e limpar formulário
-                reportModalEl.classList.remove('active');
-                problemFormEl.reset();
-                
-            } catch (error) {
-                console.error('Erro ao reportar problema:', error);
-                alert('Erro ao enviar relatório. Por favor, tente novamente.');
-            } finally {
-                // Reabilitar botão
-                const submitBtn = problemFormEl.querySelector('.btn-submit');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+
+                renderDashboard(results, stats);
+
+            } catch (err) {
+                alert("Erro ao carregar dados: " + err.message);
+                document.getElementById('token-modal').classList.add('active');
+                document.getElementById('initial-loading').style.display = 'none';
             }
         }
-        
-        // =================== EXPORTAR FUNÇÕES GLOBAIS ===================
-        window.openReportModal = openReportModal;
+
+        function renderDashboard(data, stats) {
+            document.getElementById('initial-loading').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+
+            // Atualiza Counters
+            document.getElementById('total-conversas').innerText = data.length;
+            document.getElementById('total-quentes').innerText = stats.quente;
+            document.getElementById('total-mornos').innerText = stats.morno;
+            document.getElementById('total-n-qualificados').innerText = stats.n_qual;
+
+            // Alimenta Tabela
+            const tbody = document.getElementById('table-content');
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.data}</td>
+                    <td><strong>${item.contato}</strong></td>
+                    <td>${item.marca}</td>
+                    <td><code>${item.medida}</code></td>
+                    <td><span class="status-badge ${item.status === 'QUALIFICADO' ? 'status-qualificado' : 'status-n-qualificado'}">${item.status}</span></td>
+                    <td><span class="${item.temp === 'QUENTE' ? 'temp-quente' : 'temp-morno'}">${item.temp}</span></td>
+                    <td>
+                        <a href="https://app.helena.run/chat/${item.id}" target="_blank" style="color:#4f6df5; text-decoration:none">
+                            <i class="fas fa-external-link-alt"></i> Ver Chat
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        }
     </script>
 </body>
 </html>
