@@ -246,7 +246,7 @@
                     body: JSON.stringify({ token: currentToken })
                 });
 
-                if (!response.ok) throw new Error(`Erro: ${response.status}`);
+                if (!response.ok) throw new Error(`Erro: 500`);
 
                 const rawData = await response.json();
                 
