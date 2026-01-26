@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Conversas IA - Helena CRM</title>
+    <title>Dashboard de Conversas IA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ESTILO GERAL E RESET */
@@ -127,7 +127,7 @@
         <div class="modal">
             <i class="fas fa-shield-alt fa-3x" style="color: #2a5298; margin-bottom: 15px;"></i>
             <h2>Acesso Restrito</h2>
-            <p>Insira o Token da API Helena para visualizar o dashboard.</p>
+            <p>Insira o Token para visualizar o dashboard.</p>
             <input type="password" id="tokenInput" placeholder="Cole seu token aqui...">
             <button class="btn-primary" onclick="saveTokenAndLoad()">Acessar Dashboard</button>
         </div>
@@ -346,7 +346,7 @@
                         <td><span class="badge ${row.classCSS}">${row.status}</span></td>
                         <td>${tempHTML}</td>
                         <td>
-                            <a href="https://app.helena.run/chat/${row.id}" target="_blank" class="btn-action">
+                            <a href="https://muvecom.wts.chat/chat2/sessions/${row.id}" target="_blank" class="btn-action">
                                 Ver Chat <i class="fas fa-external-link-alt" style="margin-left:5px"></i>
                             </a>
                         </td>
