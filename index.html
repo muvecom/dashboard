@@ -145,7 +145,7 @@
         <div id="loading" class="loading-container">
             <i class="fas fa-circle-notch fa-spin"></i>
             <h3>Processando conversas e qualificando leads...</h3>
-            <p>Conectando ao n8n...</p>
+            <p>Conectando ao banco de dados...</p>
         </div>
 
         <div id="dashboard" style="display: none;">
@@ -190,8 +190,8 @@
 
     <script>
         // ================= CONFIGURAÇÕES =================
-        // SUBSTITUA ABAIXO PELO URL DO SEU WEBHOOK N8N
-        const N8N_WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924'; 
+        // SUBSTITUA ABAIXO PELO URL DO SEU WEBHOOK
+        const WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924'; 
         
         // Parâmetros de negócio
         const MARCAS = ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE', 'KUMHO', 'YOKOHAMA'];
@@ -229,8 +229,8 @@
 
         // ================= LÓGICA DE DADOS =================
         async function loadData() {
-            if (!N8N_WEBHOOK_URL || N8N_WEBHOOK_URL.includes('SEU_WEBHOOK')) {
-                alert("ERRO DE CONFIGURAÇÃO: Você precisa editar o arquivo HTML e colocar a URL do seu Webhook n8n na linha 194.");
+            if (!WEBHOOK_URL || WEBHOOK_URL.includes('SEU_WEBHOOK')) {
+                alert("ERRO DE CONFIGURAÇÃO: Você precisa editar o arquivo HTML e colocar a URL do seu Webhook na linha 194.");
                 return;
             }
 
@@ -239,18 +239,18 @@
             document.getElementById('loading').style.display = 'block';
 
             try {
-                // 1. Chama o Webhook n8n (POST) passando o token
-                const response = await fetch(N8N_WEBHOOK_URL, {
+                // 1. Chama o Webhook (POST) passando o token
+                const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: currentToken })
                 });
 
-                if (!response.ok) throw new Error(`Erro n8n: ${response.status}`);
+                if (!response.ok) throw new Error(`Erro: ${response.status}`);
 
                 const rawData = await response.json();
                 
-                // O n8n deve retornar um array de objetos onde cada objeto tem { messages: [], ... }
+                // O servidor deve retornar um array de objetos onde cada objeto tem { messages: [], ... }
                 // Verificando se veio array direto ou encapsulado
                 const sessionsList = Array.isArray(rawData) ? rawData : (rawData.data || []);
 
@@ -258,7 +258,7 @@
 
             } catch (error) {
                 console.error(error);
-                alert("Falha ao carregar dados. Verifique o Token ou se o n8n está ativo.\n\n" + error.message);
+                alert("Falha ao carregar dados. Verifique o Token está ativo.\n\n" + error.message);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('tokenModal').classList.add('active');
             }
@@ -271,7 +271,7 @@
             // Mapeia e processa cada conversa
             const processedData = sessions.map(session => {
                 // Concatena texto do usuário (ignora mensagens do bot)
-                // Se o n8n já mandou filtrado, ótimo. Se mandou tudo, filtramos aqui.
+                // Se o servidor já mandou filtrado, ótimo. Se mandou tudo, filtramos aqui.
                 const messages = session.messages || [];
                 const userFullText = messages
                     .filter(m => !m.fromBot) // Garante que é msg do humano
