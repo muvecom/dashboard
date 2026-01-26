@@ -258,7 +258,7 @@
 
             } catch (error) {
                 console.error(error);
-                alert("Falha ao carregar dados. Verifique o Token está ativo.\n\n" + error.message);
+                alert("Falha ao carregar dados. Verifique o Token está ativo.\n\n Erro: 500");
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('tokenModal').classList.add('active');
             }
