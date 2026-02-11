@@ -6,56 +6,119 @@
     <title>Dashboard de Conversas IA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ESTILO INTEGRAL PRESERVADO */
+        /* ESTILO GERAL E RESET (MANTIDO ORIGINAL) */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f2f5; color: #333; line-height: 1.6; }
+        
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* HEADER */
         header { 
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
-            color: white; padding: 25px; border-radius: 12px; margin-bottom: 30px; 
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); display: flex;
-            justify-content: space-between; align-items: center;
+            color: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            margin-bottom: 30px; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        
         .header-info h1 { font-size: 1.8rem; margin-bottom: 5px; }
         .header-info p { font-size: 0.9rem; opacity: 0.9; }
+        
         .btn-refresh {
-            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
-            color: white; padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: 0.3s; font-weight: 600;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 600;
         }
         .btn-refresh:hover { background: rgba(255,255,255,0.3); }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        /* CARDS DE ESTATÍSTICA */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        
         .stat-card { 
-            background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); 
-            display: flex; flex-direction: column; align-items: center; border-bottom: 4px solid transparent;
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            border-bottom: 4px solid transparent;
         }
+        
         .stat-card h3 { font-size: 0.9rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .stat-value { font-size: 2.5rem; font-weight: 700; color: #333; }
+        
+        /* Cores especificas dos cards */
         .card-total { border-color: #2a5298; }
-        .card-quente { border-color: #d32f2f; } .card-quente .stat-value { color: #d32f2f; }
-        .card-morno { border-color: #f57c00; } .card-morno .stat-value { color: #f57c00; }
-        .card-nqual { border-color: #78909c; } .card-nqual .stat-value { color: #78909c; }
+        .card-quente { border-color: #d32f2f; }
+        .card-quente .stat-value { color: #d32f2f; }
+        .card-morno { border-color: #f57c00; }
+        .card-morno .stat-value { color: #f57c00; }
+        .card-nqual { border-color: #78909c; }
+        .card-nqual .stat-value { color: #78909c; }
 
+        /* TABELA DE DADOS */
         .table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+        
         table { width: 100%; border-collapse: collapse; }
         thead { background-color: #f8f9fa; border-bottom: 2px solid #e9ecef; }
         th { padding: 15px 20px; text-align: left; font-size: 0.8rem; font-weight: 700; color: #495057; text-transform: uppercase; }
         td { padding: 15px 20px; border-bottom: 1px solid #f1f3f5; font-size: 0.9rem; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
         tr:hover { background-color: #f8f9fa; }
 
+        /* BADGES E LABELS */
         .badge { padding: 5px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+        
         .badge-qualificado { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .badge-n-qualificado { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        
+        .temp-icon { margin-right: 5px; }
+        .temp-quente { color: #d32f2f; font-weight: 700; }
+        .temp-morno { color: #f57c00; font-weight: 700; }
+        
         .medida-tag { background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
         .marca-tag { font-weight: 600; color: #455a64; }
-        .btn-action { text-decoration: none; color: white; background-color: #2a5298; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; transition: 0.2s; }
+
+        .btn-action { 
+            text-decoration: none; 
+            color: white; 
+            background-color: #2a5298; 
+            padding: 6px 12px; 
+            border-radius: 4px; 
+            font-size: 0.85rem; 
+            transition: 0.2s;
+        }
         .btn-action:hover { background-color: #1e3c72; }
 
+        /* LOADING & MODAL */
         .loading-container { text-align: center; padding: 60px; display: none; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .fa-spin { font-size: 3rem; color: #2a5298; margin-bottom: 20px; }
+
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); 
+            display: flex; justify-content: center; align-items: center; 
+            z-index: 9999; 
+            opacity: 0; visibility: hidden; transition: 0.3s; 
+        }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal { background: white; width: 90%; max-width: 450px; border-radius: 12px; padding: 30px; text-align: center; }
+        
+        .modal { background: white; width: 90%; max-width: 450px; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal h2 { margin-bottom: 15px; color: #1e3c72; }
         .modal input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        .btn-primary { background: #2a5298; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 1rem; width: 100%; transition: 0.2s; }
+        .btn-primary:hover { background: #1e3c72; }
+
     </style>
 </head>
 <body>
@@ -66,7 +129,7 @@
             <h2>Acesso Restrito</h2>
             <p>Insira o Token para visualizar o dashboard.</p>
             <input type="password" id="tokenInput" placeholder="Cole seu token aqui...">
-            <button class="btn-primary" style="width:100%; padding:12px; background:#2a5298; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="saveTokenAndLoad()">Acessar Dashboard</button>
+            <button class="btn-primary" onclick="saveTokenAndLoad()">Acessar Dashboard</button>
         </div>
     </div>
 
@@ -80,16 +143,29 @@
         </header>
 
         <div id="loading" class="loading-container">
-            <i class="fas fa-circle-notch fa-spin fa-3x" style="color:#2a5298; margin-bottom:20px"></i>
+            <i class="fas fa-circle-notch fa-spin"></i>
             <h3>Processando conversas e qualificando leads...</h3>
+            <p>Conectando ao banco de dados...</p>
         </div>
 
         <div id="dashboard" style="display: none;">
             <div class="stats-grid">
-                <div class="stat-card card-total"><h3>Total Conversas</h3><div class="stat-value" id="count-total">0</div></div>
-                <div class="stat-card card-quente"><h3>Leads Quentes</h3><div class="stat-value" id="count-quente">0</div></div>
-                <div class="stat-card card-morno"><h3>Leads Mornos</h3><div class="stat-value" id="count-morno">0</div></div>
-                <div class="stat-card card-nqual"><h3>Não Qualificados</h3><div class="stat-value" id="count-nqual">0</div></div>
+                <div class="stat-card card-total">
+                    <h3>Total Conversas</h3>
+                    <div class="stat-value" id="count-total">0</div>
+                </div>
+                <div class="stat-card card-quente">
+                    <h3>Leads Quentes</h3>
+                    <div class="stat-value" id="count-quente">0</div>
+                </div>
+                <div class="stat-card card-morno">
+                    <h3>Leads Mornos</h3>
+                    <div class="stat-value" id="count-morno">0</div>
+                </div>
+                <div class="stat-card card-nqual">
+                    <h3>Não Qualificados</h3>
+                    <div class="stat-value" id="count-nqual">0</div>
+                </div>
             </div>
 
             <div class="table-container">
@@ -105,30 +181,38 @@
                             <th>Ação</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body"></tbody>
+                    <tbody id="table-body">
+                        </tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        const WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924';
+        // ================= CONFIGURAÇÕES =================
+        const WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924'; 
+        
+        // Parâmetros de negócio (Regras Qualitativas gerenciadas pelo Front)
         const MARCAS = ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE', 'KUMHO', 'YOKOHAMA'];
         const PRODUTOS_QUALIFICADOS = ['PNEU', 'ARO', 'BALANCEAMENTO', 'ALINHAMENTO', 'RODA', 'CAMBAGEM', 'SUSPENSAO', 'FREIO', 'OLEO'];
         const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'JA', 'JÁ', 'ESTOU INDO', '15 DIAS', 'QUINZE DIAS'];
+        // NOVO: Lista de termos negativos (ex: farol) para desqualificar
+        const TERMOS_NEGATIVOS = ['FAROL', 'LANTERNA', 'MOTOR', 'PARACHOQUE', 'LATA', 'PINTURA', 'VIDRO'];
 
         let currentToken = null;
 
-        // FUNÇÃO NUCLEAR: Gerenciamento de URL e Token
+        // ================= INICIALIZAÇÃO =================
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const tokenUrl = urlParams.get('token');
+
             if (tokenUrl) {
+                // Se tem token na URL, usa ele e LIMPA A URL (Função restaurada)
                 currentToken = tokenUrl;
-                // ESCONDE O TOKEN DA URL PARA SEGURANÇA
                 window.history.replaceState({}, document.title, window.location.pathname);
                 loadData();
             } else {
+                // Se não tem, abre modal
                 document.getElementById('tokenModal').classList.add('active');
             }
         });
@@ -139,10 +223,14 @@
                 currentToken = input;
                 document.getElementById('tokenModal').classList.remove('active');
                 loadData();
+            } else {
+                alert("Por favor, insira um token válido.");
             }
         }
 
+        // ================= LÓGICA DE DADOS =================
         async function loadData() {
+            // UI Updates
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
 
@@ -152,11 +240,20 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: currentToken })
                 });
+
+                if (!response.ok) throw new Error(`Erro: 500`);
+
                 const rawData = await response.json();
+                
+                // CORREÇÃO CRÍTICA PARA DADOS: 
+                // Verifica se veio array direto OU objeto com chave 'data'
                 const sessionsList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+
                 processAndRender(sessionsList);
+
             } catch (error) {
                 console.error(error);
+                alert("Falha ao carregar dados. Verifique o Token ou o formato do JSON.\n\n" + error);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('tokenModal').classList.add('active');
             }
@@ -166,54 +263,90 @@
             let stats = { quente: 0, morno: 0, nqual: 0 };
             let tableHTML = '';
 
+            // Mapeia e processa cada conversa
             const processedData = sessions.map(session => {
-                // TRATAMENTO RESILIENTE DE DADOS (Se o n8n mudar o nome, o código tenta o próximo)
-                const rawMessages = session.messages || session.json?.messages || [];
-                const createdAt = session.createdAt || session.json?.createdAt || new Date();
-                const contactName = session.contactName || session.json?.contactName || "Cliente";
+                // CORREÇÃO CRÍTICA 2: BLINDAGEM CONTRA FALHA DE DADOS
+                // O n8n às vezes manda dentro de session.json. Se não achar em um, procura no outro.
+                // Isso evita o erro de "Invalid Date" ou dados zerados.
+                const safeSession = session.json ? session.json : session;
+
+                // 1. Extração de Mensagens (com segurança)
+                const messages = safeSession.messages || [];
                 
-                // Normaliza texto para análise
-                const userFullText = rawMessages
-                    .filter(m => !m.fromBot)
+                // Concatena texto do usuário (ignora mensagens do bot)
+                const userFullText = messages
+                    .filter(m => !m.fromBot) 
                     .map(m => (m.text || "").toUpperCase())
                     .join(" ");
 
-                // Lógica de Qualificação
-                const temInteresse = PRODUTOS_QUALIFICADOS.some(p => userFullText.includes(p)) || 
-                                     MARCAS.some(m => userFullText.includes(m));
+                // 2. Identificar Qualificação (Marcas ou Serviços)
+                // LÓGICA MELHORADA: Verifica se tem negativos primeiro
+                const temNegativo = TERMOS_NEGATIVOS.some(n => userFullText.includes(n));
+                const temInteresse = (PRODUTOS_QUALIFICADOS.some(p => userFullText.includes(p)) || 
+                                      MARCAS.some(m => userFullText.includes(m))) && !temNegativo;
 
-                let status = "Não Qualificado", temp = "-", classCSS = "badge-n-qualificado";
+                let status = "Não Qualificado";
+                let temp = "-";
+                let classificacaoCSS = "badge-n-qualificado";
 
                 if (temInteresse) {
                     status = "Qualificado";
-                    classCSS = "badge-qualificado";
+                    classificacaoCSS = "badge-qualificado";
+
+                    // 3. Identificar Temperatura
                     const isQuente = TERMOS_QUENTE.some(t => userFullText.includes(t));
-                    if (isQuente) { temp = "Quente"; stats.quente++; } 
-                    else { temp = "Morno"; stats.morno++; }
+                    
+                    if (isQuente) {
+                        temp = "Quente";
+                        stats.quente++;
+                    } else {
+                        temp = "Morno";
+                        stats.morno++;
+                    }
                 } else {
                     stats.nqual++;
                 }
 
-                // Regex Pneu e Marca
-                const matchMedida = userFullText.match(/\d{3}\/\d{2}\s?R?\d{2}/i);
+                // 4. Regex para Medidas de Pneu
+                const regexMedida = /\d{3}\/\d{2}\s?R?\d{2}/i;
+                const matchMedida = userFullText.match(regexMedida);
                 const medida = matchMedida ? matchMedida[0].toUpperCase() : "-";
+
+                // 5. Identificar Marca
                 const marca = MARCAS.find(m => userFullText.includes(m)) || "-";
 
-                // Tratamento de Data
-                let dataFormatada = "Data Indisponível";
-                try { dataFormatada = new Date(createdAt).toLocaleString('pt-BR'); } catch(e) {}
+                // 6. Tratamento de Data (Evitar Invalid Date)
+                let dataFormatada = "Data Inválida";
+                const dataBruta = safeSession.createdAt || safeSession.created_at || new Date(); // Tenta variações comuns
+                try {
+                    dataFormatada = new Date(dataBruta).toLocaleString('pt-BR');
+                } catch(e) { console.log('Erro data', e); }
 
                 return {
-                    id: session.id || session.json?.id,
+                    id: safeSession.id || 'sem-id',
                     data: dataFormatada,
-                    contato: contactName,
-                    marca, medida, status, temp, classCSS
+                    contato: safeSession.contactName || safeSession.name || "Desconhecido", // Tenta contactName ou name
+                    marca,
+                    medida,
+                    status,
+                    temp,
+                    classCSS: classificacaoCSS
                 };
             });
 
+            // Ordenar: Quentes primeiro
+            processedData.sort((a, b) => {
+                if(a.temp === 'Quente' && b.temp !== 'Quente') return -1;
+                if(a.temp !== 'Quente' && b.temp === 'Quente') return 1;
+                return 0;
+            });
+
+            // Gerar HTML da Tabela
             processedData.forEach(row => {
-                const tempIcon = row.temp === 'Quente' ? '<i class="fas fa-fire" style="color:#d32f2f"></i> ' : (row.temp === 'Morno' ? '<i class="fas fa-clock" style="color:#f57c00"></i> ' : '');
-                
+                const tempHTML = row.temp === 'Quente' 
+                    ? `<span class="temp-quente"><i class="fas fa-fire temp-icon"></i>Quente</span>` 
+                    : (row.temp === 'Morno' ? `<span class="temp-morno"><i class="fas fa-clock temp-icon"></i>Morno</span>` : '-');
+
                 tableHTML += `
                     <tr>
                         <td>${row.data}</td>
@@ -221,16 +354,25 @@
                         <td><span class="marca-tag">${row.marca}</span></td>
                         <td>${row.medida !== '-' ? `<span class="medida-tag">${row.medida}</span>` : '<span style="color:#ccc">N/A</span>'}</td>
                         <td><span class="badge ${row.classCSS}">${row.status}</span></td>
-                        <td>${tempIcon}${row.temp}</td>
-                        <td><a href="https://muvecom.wts.chat/chat2/sessions/${row.id}" target="_blank" class="btn-action">Ver Chat</a></td>
-                    </tr>`;
+                        <td>${tempHTML}</td>
+                        <td>
+                            <a href="https://muvecom.wts.chat/chat2/sessions/${row.id}" target="_blank" class="btn-action">
+                                Ver Chat <i class="fas fa-external-link-alt" style="margin-left:5px"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
             });
 
+            // Renderizar Stats
             document.getElementById('count-total').innerText = sessions.length;
             document.getElementById('count-quente').innerText = stats.quente;
             document.getElementById('count-morno').innerText = stats.morno;
             document.getElementById('count-nqual').innerText = stats.nqual;
-            document.getElementById('table-body').innerHTML = tableHTML || '<tr><td colspan="7">Nenhum dado encontrado.</td></tr>';
+
+            // Renderizar Tabela e trocar telas
+            document.getElementById('table-body').innerHTML = tableHTML || '<tr><td colspan="7" style="text-align:center; padding:30px">Nenhuma conversa encontrada.</td></tr>';
+            
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
         }
