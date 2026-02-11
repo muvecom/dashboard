@@ -6,7 +6,7 @@
     <title>Dashboard de Conversas IA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ESTILO GERAL E RESET (MANTIDO ORIGINAL) */
+        /* ESTILO GERAL E RESET */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0f2f5; color: #333; line-height: 1.6; }
         
@@ -57,7 +57,6 @@
         .stat-card h3 { font-size: 0.9rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
         .stat-value { font-size: 2.5rem; font-weight: 700; color: #333; }
         
-        /* Cores especificas dos cards */
         .card-total { border-color: #2a5298; }
         .card-quente { border-color: #d32f2f; }
         .card-quente .stat-value { color: #d32f2f; }
@@ -118,7 +117,6 @@
         .modal input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
         .btn-primary { background: #2a5298; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 1rem; width: 100%; transition: 0.2s; }
         .btn-primary:hover { background: #1e3c72; }
-
     </style>
 </head>
 <body>
@@ -181,8 +179,7 @@
                             <th>Ação</th>
                         </tr>
                     </thead>
-                    <tbody id="table-body">
-                        </tbody>
+                    <tbody id="table-body"></tbody>
                 </table>
             </div>
         </div>
@@ -191,28 +188,21 @@
     <script>
         // ================= CONFIGURAÇÕES =================
         const WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924'; 
-        
-        // Parâmetros de negócio (Regras Qualitativas gerenciadas pelo Front)
         const MARCAS = ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE', 'KUMHO', 'YOKOHAMA'];
         const PRODUTOS_QUALIFICADOS = ['PNEU', 'ARO', 'BALANCEAMENTO', 'ALINHAMENTO', 'RODA', 'CAMBAGEM', 'SUSPENSAO', 'FREIO', 'OLEO'];
         const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'JA', 'JÁ', 'ESTOU INDO', '15 DIAS', 'QUINZE DIAS'];
-        // NOVO: Lista de termos negativos (ex: farol) para desqualificar
         const TERMOS_NEGATIVOS = ['FAROL', 'LANTERNA', 'MOTOR', 'PARACHOQUE', 'LATA', 'PINTURA', 'VIDRO'];
 
         let currentToken = null;
 
-        // ================= INICIALIZAÇÃO =================
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const tokenUrl = urlParams.get('token');
-
             if (tokenUrl) {
-                // Se tem token na URL, usa ele e LIMPA A URL (Função restaurada)
                 currentToken = tokenUrl;
                 window.history.replaceState({}, document.title, window.location.pathname);
                 loadData();
             } else {
-                // Se não tem, abre modal
                 document.getElementById('tokenModal').classList.add('active');
             }
         });
@@ -228,32 +218,22 @@
             }
         }
 
-        // ================= LÓGICA DE DADOS =================
         async function loadData() {
-            // UI Updates
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
-
             try {
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: currentToken })
                 });
-
                 if (!response.ok) throw new Error(`Erro: 500`);
-
                 const rawData = await response.json();
-                
-                // CORREÇÃO CRÍTICA PARA DADOS: 
-                // Verifica se veio array direto OU objeto com chave 'data'
                 const sessionsList = Array.isArray(rawData) ? rawData : (rawData.data || []);
-
                 processAndRender(sessionsList);
-
             } catch (error) {
                 console.error(error);
-                alert("Falha ao carregar dados. Verifique o Token ou o formato do JSON.\n\n" + error);
+                alert("Falha ao carregar dados. Verifique o Token.\n\n" + error);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('tokenModal').classList.add('active');
             }
@@ -263,116 +243,70 @@
             let stats = { quente: 0, morno: 0, nqual: 0 };
             let tableHTML = '';
 
-            // Mapeia e processa cada conversa
             const processedData = sessions.map(session => {
-                // CORREÇÃO CRÍTICA 2: BLINDAGEM CONTRA FALHA DE DADOS
-                // O n8n às vezes manda dentro de session.json. Se não achar em um, procura no outro.
-                // Isso evita o erro de "Invalid Date" ou dados zerados.
-                const safeSession = session.json ? session.json : session;
+                // CORE FIX: Normalização para n8n e Captura de Nome Real
+                const s = session.json ? session.json : session;
+                const nomeLead = s.contact?.name || s.contactName || s.name || s.pushName || "Desconhecido";
 
-                // 1. Extração de Mensagens (com segurança)
-                const messages = safeSession.messages || [];
-                
-                // Concatena texto do usuário (ignora mensagens do bot)
+                const messages = s.messages || [];
                 const userFullText = messages
                     .filter(m => !m.fromBot) 
                     .map(m => (m.text || "").toUpperCase())
                     .join(" ");
 
-                // 2. Identificar Qualificação (Marcas ou Serviços)
-                // LÓGICA MELHORADA: Verifica se tem negativos primeiro
                 const temNegativo = TERMOS_NEGATIVOS.some(n => userFullText.includes(n));
                 const temInteresse = (PRODUTOS_QUALIFICADOS.some(p => userFullText.includes(p)) || 
-                                      MARCAS.some(m => userFullText.includes(m))) && !temNegativo;
+                                     MARCAS.some(m => userFullText.includes(m))) && !temNegativo;
 
-                let status = "Não Qualificado";
-                let temp = "-";
-                let classificacaoCSS = "badge-n-qualificado";
+                let status = "Não Qualificado", temp = "-", classificacaoCSS = "badge-n-qualificado";
 
                 if (temInteresse) {
                     status = "Qualificado";
                     classificacaoCSS = "badge-qualificado";
-
-                    // 3. Identificar Temperatura
-                    const isQuente = TERMOS_QUENTE.some(t => userFullText.includes(t));
-                    
-                    if (isQuente) {
-                        temp = "Quente";
-                        stats.quente++;
+                    if (TERMOS_QUENTE.some(t => userFullText.includes(t))) {
+                        temp = "Quente"; stats.quente++;
                     } else {
-                        temp = "Morno";
-                        stats.morno++;
+                        temp = "Morno"; stats.morno++;
                     }
-                } else {
-                    stats.nqual++;
-                }
+                } else { stats.nqual++; }
 
-                // 4. Regex para Medidas de Pneu
-                const regexMedida = /\d{3}\/\d{2}\s?R?\d{2}/i;
-                const matchMedida = userFullText.match(regexMedida);
+                const matchMedida = userFullText.match(/\d{3}\/\d{2}\s?R?\d{2}/i);
                 const medida = matchMedida ? matchMedida[0].toUpperCase() : "-";
-
-                // 5. Identificar Marca
                 const marca = MARCAS.find(m => userFullText.includes(m)) || "-";
 
-                // 6. Tratamento de Data (Evitar Invalid Date)
+                // CORE FIX: Tratamento de Datas Reais (Busca em múltiplos campos)
                 let dataFormatada = "Data Inválida";
-                const dataBruta = safeSession.createdAt || safeSession.created_at || new Date(); // Tenta variações comuns
+                const rawDate = s.createdAt || s.created_at || s.timestamp || new Date();
                 try {
-                    dataFormatada = new Date(dataBruta).toLocaleString('pt-BR');
-                } catch(e) { console.log('Erro data', e); }
+                    const dateObj = new Date(rawDate);
+                    if (!isNaN(dateObj)) {
+                        dataFormatada = dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    }
+                } catch(e) {}
 
-                return {
-                    id: safeSession.id || 'sem-id',
-                    data: dataFormatada,
-                    contato: safeSession.contactName || safeSession.name || "Desconhecido", // Tenta contactName ou name
-                    marca,
-                    medida,
-                    status,
-                    temp,
-                    classCSS: classificacaoCSS
-                };
+                return { id: s.id || 'sem-id', data: dataFormatada, contato: nomeLead, marca, medida, status, temp, classCSS: classificacaoCSS };
             });
 
-            // Ordenar: Quentes primeiro
-            processedData.sort((a, b) => {
-                if(a.temp === 'Quente' && b.temp !== 'Quente') return -1;
-                if(a.temp !== 'Quente' && b.temp === 'Quente') return 1;
-                return 0;
-            });
+            processedData.sort((a, b) => (a.temp === 'Quente' ? -1 : (b.temp === 'Quente' ? 1 : 0)));
 
-            // Gerar HTML da Tabela
             processedData.forEach(row => {
-                const tempHTML = row.temp === 'Quente' 
-                    ? `<span class="temp-quente"><i class="fas fa-fire temp-icon"></i>Quente</span>` 
-                    : (row.temp === 'Morno' ? `<span class="temp-morno"><i class="fas fa-clock temp-icon"></i>Morno</span>` : '-');
-
-                tableHTML += `
-                    <tr>
-                        <td>${row.data}</td>
-                        <td><strong>${row.contato}</strong></td>
-                        <td><span class="marca-tag">${row.marca}</span></td>
-                        <td>${row.medida !== '-' ? `<span class="medida-tag">${row.medida}</span>` : '<span style="color:#ccc">N/A</span>'}</td>
-                        <td><span class="badge ${row.classCSS}">${row.status}</span></td>
-                        <td>${tempHTML}</td>
-                        <td>
-                            <a href="https://muvecom.wts.chat/chat2/sessions/${row.id}" target="_blank" class="btn-action">
-                                Ver Chat <i class="fas fa-external-link-alt" style="margin-left:5px"></i>
-                            </a>
-                        </td>
-                    </tr>
-                `;
+                const tempHTML = row.temp === 'Quente' ? `<span class="temp-quente"><i class="fas fa-fire"></i> Quente</span>` : (row.temp === 'Morno' ? `<span class="temp-morno"><i class="fas fa-clock"></i> Morno</span>` : '-');
+                tableHTML += `<tr>
+                    <td>${row.data}</td>
+                    <td><strong>${row.contato}</strong></td>
+                    <td><span class="marca-tag">${row.marca}</span></td>
+                    <td>${row.medida !== '-' ? `<span class="medida-tag">${row.medida}</span>` : '<span style="color:#ccc">N/A</span>'}</td>
+                    <td><span class="badge ${row.classCSS}">${row.status}</span></td>
+                    <td>${tempHTML}</td>
+                    <td><a href="https://muvecom.wts.chat/chat2/sessions/${row.id}" target="_blank" class="btn-action">Ver Chat <i class="fas fa-external-link-alt"></i></a></td>
+                </tr>`;
             });
 
-            // Renderizar Stats
             document.getElementById('count-total').innerText = sessions.length;
             document.getElementById('count-quente').innerText = stats.quente;
             document.getElementById('count-morno').innerText = stats.morno;
             document.getElementById('count-nqual').innerText = stats.nqual;
-
-            // Renderizar Tabela e trocar telas
-            document.getElementById('table-body').innerHTML = tableHTML || '<tr><td colspan="7" style="text-align:center; padding:30px">Nenhuma conversa encontrada.</td></tr>';
-            
+            document.getElementById('table-body').innerHTML = tableHTML || '<tr><td colspan="7" style="text-align:center">Nenhuma conversa encontrada.</td></tr>';
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
         }
