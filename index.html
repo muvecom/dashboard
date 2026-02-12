@@ -209,6 +209,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('token')) {
                 currentToken = urlParams.get('token');
+                
+                // --- AQUI ESTÁ A SOLUÇÃO PARA ESCONDER A URL ---
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: newUrl}, '', newUrl);
+                // ----------------------------------------------
+
                 loadData();
             } else {
                 document.getElementById('tokenModal').classList.add('active');
