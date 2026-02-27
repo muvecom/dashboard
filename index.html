@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,30 +9,51 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* ESTILO GERAL E RESET */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0f2f5; color: #333; line-height: 1.6; }
-        
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
         /* HEADER */
-        header { 
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
-            color: white; 
-            padding: 25px; 
-            border-radius: 12px; 
-            margin-bottom: 30px; 
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
-        .header-info h1 { font-size: 1.8rem; margin-bottom: 5px; }
-        .header-info p { font-size: 0.9rem; opacity: 0.9; }
-        
+
+        .header-info h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .header-info p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
         .btn-refresh {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
             color: white;
             padding: 10px 20px;
             border-radius: 6px;
@@ -39,82 +61,324 @@
             transition: 0.3s;
             font-weight: 600;
         }
-        .btn-refresh:hover { background: rgba(255,255,255,0.3); }
+
+        .btn-refresh:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
 
         /* SEÇÃO DE PIZZAS */
-        .charts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
-        .chart-box { 
-            background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             min-height: 250px;
         }
-        .chart-header { width: 100%; display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .chart-header h4 { font-size: 0.85rem; color: #666; text-transform: uppercase; }
-        .chart-header .big-num { font-size: 2rem; font-weight: 800; color: #1e3c72; line-height: 1; }
-        .chart-canvas-wrapper { width: 100%; height: 180px; display: flex; justify-content: center; position: relative;}
+
+        .chart-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .chart-header h4 {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .chart-header .big-num {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1e3c72;
+            line-height: 1;
+        }
+
+        .chart-canvas-wrapper {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
 
         /* CARDS DE ESTATÍSTICA */
-        .section-title { margin: 20px 0 10px; font-size: 1.1rem; color: #444; font-weight: 700; border-left: 4px solid #1e3c72; padding-left: 10px; }
-        
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
-        
-        .stat-card { 
-            background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
-            display: flex; flex-direction: column; align-items: flex-start; border-left: 4px solid transparent; 
+        .section-title {
+            margin: 20px 0 10px;
+            font-size: 1.1rem;
+            color: #444;
+            font-weight: 700;
+            border-left: 4px solid #1e3c72;
+            padding-left: 10px;
         }
-        .stat-card h3 { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-        .stat-value { font-size: 1.8rem; font-weight: 700; color: #333; }
-        
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            border-left: 4px solid transparent;
+        }
+
+        .stat-card h3 {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+        }
+
         /* Cores Cards */
-        .border-blue { border-color: #1e3c72; }
-        .border-green { border-color: #2e7d32; }
-        .border-red { border-color: #d32f2f; }
-        .border-orange { border-color: #f57c00; }
-        .border-purple { border-color: #7b1fa2; } /* Vendas */
-        
-        .text-green { color: #2e7d32; }
-        .text-red { color: #d32f2f; }
-        .text-purple { color: #7b1fa2; }
+        .border-blue {
+            border-color: #1e3c72;
+        }
+
+        .border-green {
+            border-color: #2e7d32;
+        }
+
+        .border-red {
+            border-color: #d32f2f;
+        }
+
+        .border-orange {
+            border-color: #f57c00;
+        }
+
+        .border-purple {
+            border-color: #7b1fa2;
+        }
+
+        /* Vendas */
+
+        .text-green {
+            color: #2e7d32;
+        }
+
+        .text-red {
+            color: #d32f2f;
+        }
+
+        .text-purple {
+            color: #7b1fa2;
+        }
 
         /* TABELA DE DADOS */
-        .table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); margin-top: 20px;}
-        table { width: 100%; border-collapse: collapse; }
-        thead { background-color: #f8f9fa; border-bottom: 2px solid #e9ecef; }
-        th { padding: 15px 15px; text-align: left; font-size: 0.75rem; font-weight: 700; color: #495057; text-transform: uppercase; }
-        td { padding: 12px 15px; border-bottom: 1px solid #f1f3f5; font-size: 0.85rem; vertical-align: middle; }
-        tr:hover { background-color: #f8f9fa; }
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
 
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
-        .badge-qualificado { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .badge-n-qualificado { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .badge-venda { background-color: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
-        
-        .temp-quente { color: #d32f2f; font-weight: 700; }
-        .temp-morno { color: #f57c00; font-weight: 700; }
-        .medida-tag { background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
-        
-        .btn-action { text-decoration: none; color: white; background-color: #2a5298; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; transition: 0.2s; display: inline-block;}
-        .btn-action:hover { opacity: 0.9; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-        .loading-container { text-align: center; padding: 60px; display: none; }
-        .fa-spin { font-size: 3rem; color: #2a5298; margin-bottom: 20px; }
+        thead {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; visibility: hidden; transition: 0.3s; }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal { background: white; width: 90%; max-width: 450px; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal h2 { margin-bottom: 15px; color: #1e3c72; }
-        .modal input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
-        .btn-primary { background: #2a5298; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 1rem; width: 100%; transition: 0.2s; }
+        th {
+            padding: 15px 15px;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #495057;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f5;
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-qualificado {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .badge-n-qualificado {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .badge-venda {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+            border: 1px solid #e1bee7;
+        }
+
+        .temp-quente {
+            color: #d32f2f;
+            font-weight: 700;
+        }
+
+        .temp-morno {
+            color: #f57c00;
+            font-weight: 700;
+        }
+
+        .medida-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .btn-action {
+            text-decoration: none;
+            color: white;
+            background-color: #2a5298;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            display: inline-block;
+        }
+
+        .btn-action:hover {
+            opacity: 0.9;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 60px;
+            display: none;
+        }
+
+        .fa-spin {
+            font-size: 3rem;
+            color: #2a5298;
+            margin-bottom: 20px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+            color: #1e3c72;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            transition: 0.2s;
+        }
 
         /* Responsividade básica */
         @media (max-width: 1000px) {
-            .charts-row, .stats-grid { grid-template-columns: repeat(2, 1fr); }
+
+            .charts-row,
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
+
         @media (max-width: 600px) {
-            .charts-row, .stats-grid { grid-template-columns: 1fr; }
+
+            .charts-row,
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="modal-overlay" id="tokenModal">
@@ -141,7 +405,7 @@
         </div>
 
         <div id="dashboard" style="display: none;">
-            
+
             <!-- GRÁFICOS PRINCIPAIS -->
             <div class="charts-row">
                 <!-- Gráfico 1: Vendas -->
@@ -229,7 +493,7 @@
     </div>
 
     <script>
-        const WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924'; 
+        const WEBHOOK_URL = 'https://api.muvecom.com.br/v1/de8b08a0-e58e-4f02-b34c-218a682f9924';
         const MARCAS = ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE', 'KUMHO', 'YOKOHAMA'];
         const PRODUTOS_QUALIFICADOS = ['PNEU', 'ARO', 'BALANCEAMENTO', 'ALINHAMENTO', 'RODA', 'CAMBAGEM', 'SUSPENSAO', 'FREIO', 'OLEO'];
         const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'JA', 'JÁ', 'ESTOU INDO', '15 DIAS', 'QUINZE DIAS'];
@@ -246,7 +510,7 @@
             if (urlParams.get('token')) {
                 currentToken = urlParams.get('token');
                 const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({path: newUrl}, '', newUrl);
+                window.history.replaceState({ path: newUrl }, '', newUrl);
                 loadData();
             } else {
                 document.getElementById('tokenModal').classList.add('active');
@@ -271,7 +535,7 @@
                     body: JSON.stringify({ token: currentToken })
                 });
                 const rawData = await response.json();
-                const sessionsList = Array.isArray(rawData) ? rawData : (rawData.data || []);
+                const sessionsList = rawData.content || [];
                 processLeads(sessionsList);
             } catch (error) {
                 console.error(error);
@@ -285,16 +549,14 @@
         function processLeads(sessions) {
             const leadsMap = new Map();
 
-            sessions.forEach(session => {
-                const s = session.json ? session.json : session;
-                
-                // Identificador único do lead (prioridade: remoteJid > phone > id)
-                const leadId = s.remoteJid || s.phone || s.id;
-                const leadName = s.contactName || s.name || "Desconhecido";
-                
+            sessions.forEach(s => {
+                // Identificador único do lead
+                let leadId = s.telefone && s.telefone !== "Sem Telefone" ? s.telefone : s.id;
+                const leadName = s.contato || "Desconhecido";
+
                 // Extrair mensagens do usuário
-                const msgsArray = (s.messages || []).filter(m => !m.fromBot);
-                const allText = msgsArray.map(m => (m.text || "").toUpperCase()).join(" ");
+                const msgsArray = (s.mensagens || []).filter(m => !m.fromBot);
+                const allText = msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ");
                 const msgCount = msgsArray.length;
 
                 // Lógica de Venda
@@ -315,18 +577,18 @@
                 const medida = medidaEncontrada ? medidaEncontrada[0] : null;
                 const marca = MARCAS.find(m => allText.includes(m));
 
-                const sessionDate = new Date(s.createdAt || Date.now());
+                const sessionDate = new Date(s.data || Date.now());
 
                 // Se o lead já existe, atualizamos os dados (consolidando)
                 if (leadsMap.has(leadId)) {
                     const existing = leadsMap.get(leadId);
-                    
+
                     // Mantém a data mais recente
                     if (sessionDate > existing.lastDate) existing.lastDate = sessionDate;
-                    
+
                     // Se em QUALQUER conversa ele comprou, ele é um lead comprador
                     if (vendeu) existing.vendeu = true;
-                    
+
                     // Se qualificou em alguma, marca como qualificado
                     if (temInt) existing.qualificado = true;
                     if (isQuente) existing.quente = true;
@@ -339,7 +601,7 @@
                     if (!existing.marca && marca) existing.marca = marca;
 
                     // Atualiza ID da sessão para linkar a mais recente
-                    existing.sessionId = s.id; 
+                    existing.sessionId = s.id;
 
                 } else {
                     // Novo Lead
@@ -359,7 +621,7 @@
             });
 
             // Converter Map para Array
-            globalProcessedLeads = Array.from(leadsMap.values()).sort((a,b) => b.lastDate - a.lastDate);
+            globalProcessedLeads = Array.from(leadsMap.values()).sort((a, b) => b.lastDate - a.lastDate);
 
             // Calcular estatísticas totais baseadas em LEADS ÚNICOS
             const stats = {
@@ -394,10 +656,10 @@
         }
 
         function initCharts(stats) {
-            const commonOptions = { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } } 
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
             };
 
             // Gráfico de Vendas
@@ -406,8 +668,8 @@
                 type: 'doughnut',
                 data: {
                     labels: ['Vendeu', 'Não Vendeu'],
-                    datasets: [{ 
-                        data: [stats.vendas, stats.totalLeads - stats.vendas], 
+                    datasets: [{
+                        data: [stats.vendas, stats.totalLeads - stats.vendas],
                         backgroundColor: ['#7b1fa2', '#eeeeee'],
                         borderWidth: 0
                     }]
@@ -440,38 +702,39 @@
 
         function renderTable(data, filterType = null) {
             const body = document.getElementById('table-body');
-            
+
             // Filtros simples se necessário (pode expandir depois)
             let displayData = data;
 
             body.innerHTML = displayData.map(lead => {
                 // Formatação status venda
-                const vendaBadge = lead.vendeu ? 
-                    `<span class="badge badge-venda"><i class="fas fa-check"></i> VENDA</span>` : 
+                const vendaBadge = lead.vendeu ?
+                    `<span class="badge badge-venda"><i class="fas fa-check"></i> VENDA</span>` :
                     `<span style="color:#ccc; font-size:0.8rem">--</span>`;
 
                 // Formatação qualificação e temp
-                const qualBadge = lead.qualificado ? 
-                    `<span class="badge badge-qualificado">Sim</span>` : 
+                const qualBadge = lead.qualificado ?
+                    `<span class="badge badge-qualificado">Sim</span>` :
                     `<span class="badge badge-n-qualificado">Não</span>`;
-                
+
                 let tempHtml = '-';
-                if(lead.qualificado) {
+                if (lead.qualificado) {
                     tempHtml = lead.quente ? `<span class="temp-quente">Quente 🔥</span>` : `<span class="temp-morno">Morno ❄️</span>`;
                 }
 
                 // Interesse
                 let interesse = [];
-                if(lead.marca) interesse.push(`<b>${lead.marca}</b>`);
-                if(lead.medida) interesse.push(`<span class="medida-tag">${lead.medida}</span>`);
+                if (lead.marca) interesse.push(`<b>${lead.marca}</b>`);
+                if (lead.medida) interesse.push(`<span class="medida-tag">${lead.medida}</span>`);
                 const interesseHtml = interesse.length > 0 ? interesse.join(' ') : '<span style="color:#ccc">Genérico</span>';
 
                 // Limpar nome do telefone para exibição
                 let phoneDisplay = lead.phoneId.split('@')[0];
-                
+                if (phoneDisplay.length > 15 && phoneDisplay.includes('-')) phoneDisplay = "Sem Telefone";
+
                 return `
                 <tr>
-                    <td>${lead.lastDate.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
+                    <td>${lead.lastDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
                     <td>
                         <div style="font-weight:bold; color:#333;">${lead.name}</div>
                         <small style="color:#999;">${phoneDisplay}</small>
@@ -487,8 +750,9 @@
         }
 
         function resetFilter() {
-             renderTable(globalProcessedLeads);
+            renderTable(globalProcessedLeads);
         }
     </script>
 </body>
+
 </html>
