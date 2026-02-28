@@ -535,7 +535,7 @@
                     body: JSON.stringify({ token: currentToken })
                 });
                 const rawData = await response.json();
-                const sessionsList = rawData.content || [];
+                const sessionsList = Array.isArray(rawData) ? rawData : (rawData.content || []);
                 processLeads(sessionsList);
             } catch (error) {
                 console.error(error);
