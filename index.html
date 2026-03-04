@@ -555,10 +555,11 @@
             sessions.forEach(s => {
                 // Identificador único do lead
                 let leadId = s.telefone && s.telefone !== "Sem Telefone" ? s.telefone : s.id;
-                const leadName = s.contato || "Desconhecido";
+                const leadName = s.contactName || s.contato || s.name || "Desconhecido";
 
                 // Extrair mensagens do usuário
-                const msgsArray = (s.mensagens || []).filter(m => !m.fromBot);
+                const rawMsgs = s.messages || s.mensagens || [];
+                const msgsArray = rawMsgs.filter(m => s.messages ? m.fromBot === true : !m.fromBot);
                 const allText = msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ");
                 const msgCount = msgsArray.length;
 
@@ -576,11 +577,11 @@
                 }
 
                 // Extração de dados
-                const medidaEncontrada = allText.match(/\d{3}\/\d{2}\s?R?\d{2}/i);
+                const medidaEncontrada = allText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
                 const medida = medidaEncontrada ? medidaEncontrada[0] : null;
                 const marca = MARCAS.find(m => allText.includes(m));
 
-                const sessionDate = new Date(s.data || Date.now());
+                const sessionDate = new Date(s.createdAt || s.ultInteracao || s.data || Date.now());
 
                 // Se o lead já existe, atualizamos os dados (consolidando)
                 if (leadsMap.has(leadId)) {
