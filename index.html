@@ -39,6 +39,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .date-filter {
+            padding: 9px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .date-filter::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
         }
 
         .header-info h1 {
@@ -399,7 +423,11 @@
                 <h1><i class="fas fa-chart-line"></i> Dashboard Vendas & IA</h1>
                 <p>Métricas por Lead, Qualificação e Conversão de Vendas</p>
             </div>
-            <button class="btn-refresh" onclick="loadData()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+            <div class="header-actions">
+                <input type="date" id="startDate" class="date-filter" title="Data Início">
+                <input type="date" id="endDate" class="date-filter" title="Data Fim">
+                <button class="btn-refresh" onclick="loadData()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+            </div>
         </header>
 
         <div id="loading" class="loading-container">
@@ -505,10 +533,22 @@
         const TERMOS_NEGATIVOS = ['FAROL', 'LANTERNA', 'MOTOR', 'PARACHOQUE', 'LATA', 'PINTURA', 'VIDRO'];
 
         let currentToken = null;
+        let globalRawSessions = []; // Armazena os dados brutos
         let globalProcessedLeads = []; // Armazena dados agrupados por pessoa
         let chartVendas, mainChart, subChart;
+        let activePieFilter = null;
 
         document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(today.getMonth() - 6);
+
+            document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+
+            document.getElementById('startDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
+            document.getElementById('endDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
+
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('token')) {
                 currentToken = urlParams.get('token');
@@ -538,8 +578,8 @@
                     body: JSON.stringify({ token: currentToken })
                 });
                 const rawData = await response.json();
-                const sessionsList = Array.isArray(rawData) ? rawData : (rawData.content || []);
-                processLeads(sessionsList);
+                globalRawSessions = Array.isArray(rawData) ? rawData : (rawData.content || []);
+                processLeads();
             } catch (error) {
                 console.error(error);
                 document.getElementById('loading').style.display = 'none';
@@ -549,10 +589,20 @@
         }
 
         // Função principal que agrupa por telefone (Lead)
-        function processLeads(sessions) {
+        function processLeads() {
+            const startDateStr = document.getElementById('startDate').value;
+            const endDateStr = document.getElementById('endDate').value;
+            const startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : new Date('2000-01-01');
+            const endDate = endDateStr ? new Date(endDateStr + 'T23:59:59') : new Date('2100-01-01');
+
             const leadsMap = new Map();
 
-            sessions.forEach(s => {
+            globalRawSessions.forEach(s => {
+                const sessionDate = new Date(s.createdAt || s.ultInteracao || s.data || Date.now());
+                if (sessionDate < startDate || sessionDate > endDate) {
+                    return; // Ignora fora do período selecionado
+                }
+
                 // Identificador único do lead
                 let leadId = s.telefone && s.telefone !== "Sem Telefone" ? s.telefone : s.id;
                 const leadName = s.contactName || s.contato || s.name || "Desconhecido";
@@ -580,8 +630,6 @@
                 const medidaEncontrada = allText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
                 const medida = medidaEncontrada ? medidaEncontrada[0] : null;
                 const marca = MARCAS.find(m => allText.includes(m));
-
-                const sessionDate = new Date(s.createdAt || s.ultInteracao || s.data || Date.now());
 
                 // Se o lead já existe, atualizamos os dados (consolidando)
                 if (leadsMap.has(leadId)) {
@@ -659,11 +707,27 @@
             document.getElementById('dashboard').style.display = 'block';
         }
 
+        function togglePieFilter(label) {
+            if (activePieFilter === label) {
+                activePieFilter = null;
+            } else {
+                activePieFilter = label;
+            }
+            renderTable(globalProcessedLeads);
+        }
+
         function initCharts(stats) {
             const commonOptions = {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+                onClick: (event, elements, chart) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        const label = chart.data.labels[idx];
+                        togglePieFilter(label);
+                    }
+                }
             };
 
             // Gráfico de Vendas
@@ -707,8 +771,21 @@
         function renderTable(data, filterType = null) {
             const body = document.getElementById('table-body');
 
-            // Filtros simples se necessário (pode expandir depois)
             let displayData = data;
+
+            if (activePieFilter) {
+                displayData = displayData.filter(lead => {
+                    switch (activePieFilter) {
+                        case 'Vendeu': return lead.vendeu;
+                        case 'Não Vendeu': return !lead.vendeu;
+                        case 'Qualificado': return lead.qualificado;
+                        case 'Desqualificado': return !lead.qualificado;
+                        case 'Quente': return lead.qualificado && lead.quente;
+                        case 'Morno': return lead.qualificado && !lead.quente;
+                        default: return true;
+                    }
+                });
+            }
 
             body.innerHTML = displayData.map(lead => {
                 // Formatação status venda
@@ -754,6 +831,7 @@
         }
 
         function resetFilter() {
+            activePieFilter = null;
             renderTable(globalProcessedLeads);
         }
     </script>
