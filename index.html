@@ -400,6 +400,71 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+        }
+
+        .pagination-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #1e3c72;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f1f3f4;
+        }
+
+        .pagination-btn:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+            border-color: #eee;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .alert-hoje-banner {
+            display: none;
+            background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(230, 81, 0, 0.3);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            position: relative;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        .alert-hoje-banner.visible {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .alert-hoje-banner i {
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
@@ -420,8 +485,8 @@
     <div class="container">
         <header>
             <div class="header-info">
-                <h1><i class="fas fa-chart-line"></i> Dashboard Vendas & IA</h1>
-                <p>Métricas por Lead, Qualificação e Conversão de Vendas</p>
+                <h1 id="dashboard-title"><i class="fas fa-chart-line"></i> Dashboard Vendas & IA</h1>
+                <p id="dashboard-subtitle">Métricas por Lead, Qualificação e Conversão de Vendas</p>
             </div>
             <div class="header-actions">
                 <input type="date" id="startDate" class="date-filter" title="Data Início">
@@ -433,6 +498,11 @@
         <div id="loading" class="loading-container">
             <i class="fas fa-circle-notch fa-spin"></i>
             <h3>Processando e agrupando leads...</h3>
+        </div>
+
+        <div id="alertHojeBanner" class="alert-hoje-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o período de hoje para que os detalhes possam ser verificados.</span>
         </div>
 
         <div id="dashboard" style="display: none;">
@@ -520,6 +590,7 @@
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
+            <div id="pagination-controls" class="pagination-container"></div>
         </div>
     </div>
 
@@ -535,24 +606,45 @@
         let currentToken = null;
         let globalRawSessions = []; // Armazena os dados brutos
         let globalProcessedLeads = []; // Armazena dados agrupados por pessoa
+        let currentFilteredLeads = [];
         let chartVendas, mainChart, subChart;
         let activePieFilter = null;
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(today.getMonth() - 6);
 
-            document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
-            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            const urlParams = new URLSearchParams(window.location.search);
+            const isHojeMode = urlParams.get('hoje') === 'true';
+            const nomeParam = urlParams.get('nome');
+
+            if (nomeParam) {
+                document.getElementById('dashboard-title').innerHTML = `<i class="fas fa-chart-line"></i> ${nomeParam}`;
+                document.getElementById('dashboard-subtitle').textContent = 'Dashboard Vendas & IA — Métricas por Lead, Qualificação e Conversão de Vendas';
+            }
+
+            if (isHojeMode) {
+                const todayStr = today.toISOString().split('T')[0];
+                document.getElementById('startDate').value = todayStr;
+                document.getElementById('endDate').value = todayStr;
+                document.getElementById('alertHojeBanner').classList.add('visible');
+            } else {
+                document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
+                document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            }
 
             document.getElementById('startDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
             document.getElementById('endDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
 
-            const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('token')) {
                 currentToken = urlParams.get('token');
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                const cleanParams = new URLSearchParams();
+                if (isHojeMode) cleanParams.set('hoje', 'true');
+                if (nomeParam) cleanParams.set('nome', nomeParam);
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (cleanParams.toString() ? '?' + cleanParams.toString() : '');
                 window.history.replaceState({ path: newUrl }, '', newUrl);
                 loadData();
             } else {
@@ -701,10 +793,17 @@
             document.getElementById('pizza-quente-val').innerText = stats.quentes;
 
             initCharts(stats);
-            renderTable(globalProcessedLeads);
+            currentFilteredLeads = globalProcessedLeads;
+            currentPage = 1;
+            renderTable();
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            renderTable();
         }
 
         function togglePieFilter(label) {
@@ -713,7 +812,25 @@
             } else {
                 activePieFilter = label;
             }
-            renderTable(globalProcessedLeads);
+
+            if (activePieFilter) {
+                currentFilteredLeads = globalProcessedLeads.filter(lead => {
+                    switch (activePieFilter) {
+                        case 'Vendeu': return lead.vendeu;
+                        case 'Não Vendeu': return !lead.vendeu;
+                        case 'Qualificado': return lead.qualificado;
+                        case 'Desqualificado': return !lead.qualificado;
+                        case 'Quente': return lead.qualificado && lead.quente;
+                        case 'Morno': return lead.qualificado && !lead.quente;
+                        default: return true;
+                    }
+                });
+            } else {
+                currentFilteredLeads = globalProcessedLeads;
+            }
+
+            currentPage = 1;
+            renderTable();
         }
 
         function initCharts(stats) {
@@ -768,26 +885,20 @@
             });
         }
 
-        function renderTable(data, filterType = null) {
+        function renderTable() {
+            const data = currentFilteredLeads;
+            const totalPages = Math.ceil(data.length / itemsPerPage) || 1;
+
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedData = data.slice(start, end);
+
             const body = document.getElementById('table-body');
 
-            let displayData = data;
-
-            if (activePieFilter) {
-                displayData = displayData.filter(lead => {
-                    switch (activePieFilter) {
-                        case 'Vendeu': return lead.vendeu;
-                        case 'Não Vendeu': return !lead.vendeu;
-                        case 'Qualificado': return lead.qualificado;
-                        case 'Desqualificado': return !lead.qualificado;
-                        case 'Quente': return lead.qualificado && lead.quente;
-                        case 'Morno': return lead.qualificado && !lead.quente;
-                        default: return true;
-                    }
-                });
-            }
-
-            body.innerHTML = displayData.map(lead => {
+            body.innerHTML = paginatedData.map(lead => {
                 // Formatação status venda
                 const vendaBadge = lead.vendeu ?
                     `<span class="badge badge-venda"><i class="fas fa-check"></i> VENDA</span>` :
@@ -828,11 +939,20 @@
                     <td><a href="https://muvecom.wts.chat/chat2/sessions/${lead.sessionId}" target="_blank" class="btn-action">Ver Chat</a></td>
                 </tr>
             `}).join('');
+
+            const paginationControls = document.getElementById('pagination-controls');
+            paginationControls.innerHTML = `
+                <button class="pagination-btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                <span class="pagination-info">Página ${currentPage} de ${totalPages} (Total: ${data.length})</span>
+                <button class="pagination-btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Próxima</button>
+            `;
         }
 
         function resetFilter() {
             activePieFilter = null;
-            renderTable(globalProcessedLeads);
+            currentFilteredLeads = globalProcessedLeads;
+            currentPage = 1;
+            renderTable();
         }
     </script>
 </body>
