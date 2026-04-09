@@ -462,8 +462,15 @@
         }
 
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-15px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -502,7 +509,8 @@
 
         <div id="alertHojeBanner" class="alert-hoje-banner">
             <i class="fas fa-exclamation-triangle"></i>
-            <span>O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o período de hoje para que os detalhes possam ser verificados.</span>
+            <span>O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o período de hoje para
+                que os detalhes possam ser verificados.</span>
         </div>
 
         <div id="dashboard" style="display: none;">
@@ -596,12 +604,59 @@
 
     <script>
         const WEBHOOK_URL = 'https://evo.muvecom.com.br/webhook/de8b08a0-e58e-4f02-b34c-218a682f9924';
-        const MARCAS = ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE', 'KUMHO', 'YOKOHAMA'];
-        const PRODUTOS_QUALIFICADOS = ['PNEU', 'ARO', 'BALANCEAMENTO', 'ALINHAMENTO', 'RODA', 'CAMBAGEM', 'SUSPENSAO', 'FREIO', 'OLEO'];
-        const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'JA', 'JÁ', 'ESTOU INDO', '15 DIAS', 'QUINZE DIAS'];
+        const NICHES = {
+            PNEUS: {
+                keywords: ['PNEU', 'ARO', 'BALANCEAMENTO', 'ALINHAMENTO', 'CAMBAGEM'],
+                produtos: ['PNEU', 'ARO', 'BALANCEAMENTO', 'ALINHAMENTO', 'RODA', 'CAMBAGEM', 'SUSPENSAO', 'FREIO', 'OLEO'],
+                marcas: ['MICHELIN', 'PIRELLI', 'GOODYEAR', 'CONTINENTAL', 'DUNLOP', 'BRIDGESTONE', 'FIRESTONE', 'KUMHO', 'YOKOHAMA'],
+                negativos: ['FAROL', 'LANTERNA', 'MOTOR', 'PARACHOQUE', 'LATA', 'PINTURA', 'VIDRO']
+            },
+            CONCESSIONARIA: {
+                keywords: ['SEMINOVO', 'TEST DRIVE', 'FINANCIAMENTO', 'CARRO NOVO', 'USADO', 'VEÍCULO', 'VEICULO'],
+                produtos: ['CARRO', 'SEMINOVO', 'TEST DRIVE', 'FINANCIAMENTO', 'VEÍCULO', 'USADO', 'CONSÓRCIO', 'CONSORCIO'],
+                marcas: ['CHEVROLET', 'VOLKSWAGEN', 'FIAT', 'FORD', 'TOYOTA', 'HONDA', 'HYUNDAI', 'RENAULT', 'JEEP', 'NISSAN', 'BYD', 'GWM', 'CHERY', 'PEUGEOT', 'CITROEN'],
+                negativos: ['MOTO', 'BICICLETA', 'CAMINHÃO', 'TRATOR']
+            },
+            AUTO_SERVICE: {
+                keywords: ['REVISÃO', 'OFICINA', 'MOTOR', 'MECÂNICO', 'INJEÇÃO', 'CORREIA', 'EMBREAGEM', 'MECANICO'],
+                produtos: ['REVISÃO', 'MOTOR', 'INJEÇÃO', 'CORREIA', 'EMBREAGEM', 'OLEO', 'FREIO', 'SUSPENSAO', 'AMORTECEDOR', 'BATERIA', 'VELA', 'FILTRO'],
+                marcas: ['BOSCH', 'MOURA', 'HELIAR', 'ACDELCO', 'MAGNETI', 'NGK', 'COFAP', 'MONROE', 'LUK', 'SACHS', 'DAYCO', 'GATES'],
+                negativos: ['PNEU NOVO', 'PINTURA', 'FUNILARIA', 'MARTELINHO', 'SEMINOVO', 'CARRO NOVO']
+            },
+            GENERICO: {
+                keywords: [],
+                produtos: ['PREÇO', 'VALOR', 'CATÁLOGO', 'CATALOGO', 'COMPRAR', 'PEDIDO', 'PRODUTO', 'ORÇAMENTO', 'ORCAMENTO', 'DISPONIVEL', 'DISPONÍVEL', 'FOTOS', 'MODELOS'],
+                marcas: [],
+                negativos: ['RECLAMAÇÃO', 'DEFEITO', 'ASSISTÊNCIA', 'CANCELAR']
+            }
+        };
+
+        const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'JA', 'JÁ', 'ESTOU INDO', '15 DIAS', 'QUINZE DIAS', 'COMPRAR', 'QUERO'];
         // Termos para identificar venda realizada no texto da conversa
-        const TERMOS_VENDA = ['PIX ENVIADO', 'COMPROVANTE', 'PAGAMENTO FEITO', 'JÁ PAGUEI', 'COMPRA APROVADA', 'PEDIDO FECHADO', 'FECHAR O PEDIDO', 'MANDA O LINK DE PAGAMENTO'];
-        const TERMOS_NEGATIVOS = ['FAROL', 'LANTERNA', 'MOTOR', 'PARACHOQUE', 'LATA', 'PINTURA', 'VIDRO'];
+        const TERMOS_VENDA = ['PIX ENVIADO', 'COMPROVANTE', 'PAGAMENTO FEITO', 'JÁ PAGUEI', 'COMPRA APROVADA', 'PEDIDO FECHADO', 'FECHAR O PEDIDO', 'MANDA O LINK DE PAGAMENTO', 'PAGO'];
+        
+        let currentNicheKey = 'GENERICO';
+        let activeNiche = NICHES.GENERICO;
+
+        function detectNiche(text) {
+            let scores = { PNEUS: 0, CONCESSIONARIA: 0, AUTO_SERVICE: 0 };
+            for (let niche in scores) {
+                NICHES[niche].keywords.forEach(kw => {
+                    const regex = new RegExp(kw, 'gi');
+                    const matches = text.match(regex);
+                    if (matches) scores[niche] += matches.length;
+                });
+            }
+            let max = 0;
+            currentNicheKey = 'GENERICO';
+            for (let niche in scores) {
+                if (scores[niche] > max && scores[niche] > 5) {
+                    max = scores[niche];
+                    currentNicheKey = niche;
+                }
+            }
+            activeNiche = NICHES[currentNicheKey];
+        }
 
         let currentToken = null;
         let globalRawSessions = []; // Armazena os dados brutos
@@ -618,7 +673,7 @@
             sixMonthsAgo.setMonth(today.getMonth() - 6);
 
             const urlParams = new URLSearchParams(window.location.search);
-            const isHojeMode = urlParams.get('hoje') === 'true';
+            const erroParam = urlParams.get('erro');
             const nomeParam = urlParams.get('nome');
 
             if (nomeParam) {
@@ -626,15 +681,11 @@
                 document.getElementById('dashboard-subtitle').textContent = 'Dashboard Vendas & IA — Métricas por Lead, Qualificação e Conversão de Vendas';
             }
 
-            if (isHojeMode) {
-                const todayStr = today.toISOString().split('T')[0];
-                document.getElementById('startDate').value = todayStr;
-                document.getElementById('endDate').value = todayStr;
+            if (erroParam) {
                 document.getElementById('alertHojeBanner').classList.add('visible');
-            } else {
-                document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
-                document.getElementById('endDate').value = today.toISOString().split('T')[0];
             }
+            document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
 
             document.getElementById('startDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
             document.getElementById('endDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
@@ -642,7 +693,7 @@
             if (urlParams.get('token')) {
                 currentToken = urlParams.get('token');
                 const cleanParams = new URLSearchParams();
-                if (isHojeMode) cleanParams.set('hoje', 'true');
+                if (erroParam) cleanParams.set('erro', erroParam);
                 if (nomeParam) cleanParams.set('nome', nomeParam);
                 const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (cleanParams.toString() ? '?' + cleanParams.toString() : '');
                 window.history.replaceState({ path: newUrl }, '', newUrl);
@@ -663,14 +714,33 @@
         async function loadData() {
             document.getElementById('dashboard').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const erroParam = urlParams.get('erro');
+            
+            const bodyPayload = { token: currentToken };
+            if (erroParam) {
+                bodyPayload.erro = erroParam;
+            }
+
             try {
                 const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: currentToken })
+                    body: JSON.stringify(bodyPayload)
                 });
                 const rawData = await response.json();
                 globalRawSessions = Array.isArray(rawData) ? rawData : (rawData.content || []);
+                
+                // Detectar nicho com base nas mensagens carregadas
+                let allTextSample = '';
+                globalRawSessions.slice(0, 150).forEach(s => {
+                    const rawMsgs = s.messages || s.mensagens || [];
+                    const msgsArray = rawMsgs.filter(m => s.messages ? m.fromBot === true : !m.fromBot);
+                    allTextSample += msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ") + " ";
+                });
+                detectNiche(allTextSample);
+                
                 processLeads();
             } catch (error) {
                 console.error(error);
@@ -709,8 +779,8 @@
                 const vendeu = TERMOS_VENDA.some(t => allText.includes(t));
 
                 // Lógica de Pneu (Negativos e Positivos)
-                const temNeg = TERMOS_NEGATIVOS.some(n => allText.includes(n));
-                const temInt = (PRODUTOS_QUALIFICADOS.some(p => allText.includes(p)) || MARCAS.some(m => allText.includes(m))) && !temNeg;
+                const temNeg = activeNiche.negativos.some(n => allText.includes(n));
+                const temInt = (activeNiche.produtos.some(p => allText.includes(p)) || activeNiche.marcas.some(m => allText.includes(m))) && !temNeg;
 
                 // Temperatura
                 let isQuente = false;
@@ -719,9 +789,12 @@
                 }
 
                 // Extração de dados
-                const medidaEncontrada = allText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
-                const medida = medidaEncontrada ? medidaEncontrada[0] : null;
-                const marca = MARCAS.find(m => allText.includes(m));
+                let medida = null;
+                if (currentNicheKey === 'PNEUS') {
+                    const medidaEncontrada = allText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
+                    medida = medidaEncontrada ? medidaEncontrada[0] : null;
+                }
+                const marca = activeNiche.marcas.find(m => allText.includes(m));
 
                 // Se o lead já existe, atualizamos os dados (consolidando)
                 if (leadsMap.has(leadId)) {
