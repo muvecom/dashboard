@@ -509,8 +509,7 @@
 
         <div id="alertHojeBanner" class="alert-hoje-banner">
             <i class="fas fa-exclamation-triangle"></i>
-            <span>O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o período de hoje para
-                que os detalhes possam ser verificados.</span>
+            <span id="bannerText">O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o período selecionado para que os detalhes possam ser verificados.</span>
         </div>
 
         <div id="dashboard" style="display: none;">
@@ -682,6 +681,12 @@
             }
 
             if (erroParam) {
+                let displayDate = erroParam;
+                if (erroParam.includes('-')) {
+                    const parts = erroParam.split('-');
+                    if (parts.length === 3) displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                document.getElementById('bannerText').innerHTML = `O agente não está qualificando corretamente em <b>${displayDate}</b>. O dashboard está puxando as conversas desse dia específico para que os detalhes da falha possam ser verificados.`;
                 document.getElementById('alertHojeBanner').classList.add('visible');
             }
             document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
