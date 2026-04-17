@@ -509,7 +509,8 @@
 
         <div id="alertHojeBanner" class="alert-hoje-banner">
             <i class="fas fa-exclamation-triangle"></i>
-            <span id="bannerText">O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o período selecionado para que os detalhes possam ser verificados.</span>
+            <span id="bannerText">O agente não está qualificando corretamente hoje. O dashboard foi filtrado para o
+                período selecionado para que os detalhes possam ser verificados.</span>
         </div>
 
         <div id="dashboard" style="display: none;">
@@ -631,9 +632,9 @@
         };
 
         const TERMOS_QUENTE = ['HOJE', 'AMANHÃ', 'AMANA', 'AGORA', 'URGENTE', 'JA', 'JÁ', 'ESTOU INDO', '15 DIAS', 'QUINZE DIAS', 'COMPRAR', 'QUERO'];
-        // Termos para identificar venda realizada no texto da conversa
-        const TERMOS_VENDA = ['PIX ENVIADO', 'COMPROVANTE', 'PAGAMENTO FEITO', 'JÁ PAGUEI', 'COMPRA APROVADA', 'PEDIDO FECHADO', 'FECHAR O PEDIDO', 'MANDA O LINK DE PAGAMENTO', 'PAGO'];
-        
+        // Termos principais que indicam venda nas tags
+        const TERMOS_CHAVE_VENDA = ['VENDA', 'PAGO', 'FECHADO'];
+
         let currentNicheKey = 'GENERICO';
         let activeNiche = NICHES.GENERICO;
 
@@ -722,7 +723,7 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             const erroParam = urlParams.get('erro');
-            
+
             const bodyPayload = { token: currentToken };
             if (erroParam) {
                 bodyPayload.erro = erroParam;
@@ -736,7 +737,7 @@
                 });
                 const rawData = await response.json();
                 globalRawSessions = Array.isArray(rawData) ? rawData : (rawData.content || []);
-                
+
                 // Detectar nicho com base nas mensagens carregadas
                 let allTextSample = '';
                 globalRawSessions.slice(0, 150).forEach(s => {
@@ -745,7 +746,7 @@
                     allTextSample += msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ") + " ";
                 });
                 detectNiche(allTextSample);
-                
+
                 processLeads();
             } catch (error) {
                 console.error(error);
@@ -780,8 +781,14 @@
                 const allText = msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ");
                 const msgCount = msgsArray.length;
 
-                // Lógica de Venda
-                const vendeu = TERMOS_VENDA.some(t => allText.includes(t));
+                // Lógica de Venda (Prioridade: Tags com "Contains" -> Fallback: Objeto de Venda do Backend)
+                const vendeuPelasTags = s.tagsName && Array.isArray(s.tagsName) && 
+                                        s.tagsName.some(tag => {
+                                            const tagUpper = tag.toUpperCase();
+                                            return TERMOS_CHAVE_VENDA.some(termo => tagUpper.includes(termo));
+                                        });
+
+                const vendeu = vendeuPelasTags || !!s.venda;
 
                 // Lógica de Pneu (Negativos e Positivos)
                 const temNeg = activeNiche.negativos.some(n => allText.includes(n));
