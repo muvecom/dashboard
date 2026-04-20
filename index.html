@@ -671,42 +671,47 @@
             const today = new Date();
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(today.getMonth() - 6);
-
+        
             const urlParams = new URLSearchParams(window.location.search);
             const erroParam = urlParams.get('erro');
             const nomeParam = urlParams.get('nome');
-
+            const tokenParam = urlParams.get('token'); // Pegamos o token aqui
+        
+            // Configuração visual inicial
             if (nomeParam) {
                 document.getElementById('dashboard-title').innerHTML = `<i class="fas fa-chart-line"></i> ${nomeParam}`;
-                document.getElementById('dashboard-subtitle').textContent = 'Dashboard Vendas & IA — Métricas por Lead, Qualificação e Conversão de Vendas';
             }
-
+        
             if (erroParam) {
                 let displayDate = erroParam;
                 if (erroParam.includes('-')) {
                     const parts = erroParam.split('-');
                     if (parts.length === 3) displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
-                document.getElementById('bannerText').innerHTML = `O agente não está qualificando corretamente em <b>${displayDate}</b>. O dashboard está puxando as conversas desse dia específico para que os detalhes da falha possam ser verificados.`;
+                document.getElementById('bannerText').innerHTML = `O agente não está qualificando corretamente em <b>${displayDate}</b>...`;
                 document.getElementById('alertHojeBanner').classList.add('visible');
             }
+        
             document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
             document.getElementById('endDate').value = today.toISOString().split('T')[0];
-
-            document.getElementById('startDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
-            document.getElementById('endDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
-
-            if (urlParams.get('token')) {
-                currentToken = urlParams.get('token');
-                const cleanParams = new URLSearchParams();
-                if (erroParam) cleanParams.set('erro', erroParam);
-                if (nomeParam) cleanParams.set('nome', nomeParam);
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + (cleanParams.toString() ? '?' + cleanParams.toString() : '');
-                window.history.replaceState({ path: newUrl }, '', newUrl);
+        
+            // LÓGICA DE CARREGAMENTO ÚNICO
+            if (tokenParam) {
+                currentToken = tokenParam;
+                
+                // Limpa a URL sem disparar recarregamento ou eventos extras
+                const newUrl = window.location.pathname + window.location.search.replace(/[\?&]token=[^&]+/, '').replace(/^&/, '?');
+                window.history.replaceState({}, '', newUrl);
+        
+                // Chama o backend UMA ÚNICA VEZ
                 loadData();
             } else {
                 document.getElementById('tokenModal').classList.add('active');
             }
+        
+            // Eventos de mudança (só disparam se já houver dados)
+            document.getElementById('startDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
+            document.getElementById('endDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
         });
 
         function saveTokenAndLoad() {
