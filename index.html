@@ -317,6 +317,11 @@
             font-weight: 700;
         }
 
+        .temp-frio {
+            color: #1e3c72;
+            font-weight: 700;
+        }
+
         .medida-tag {
             background: #e3f2fd;
             color: #1565c0;
@@ -818,6 +823,80 @@
             }
         }
 
+        // Calcula a pontuação do lead com base em 6 critérios (Busca por produto, preço, características, pagamento, visita/test-drive, decidido)
+        function calculateLeadScore(allText, currentNiche) {
+            const upperText = allText.toUpperCase();
+            let score = 0;
+
+            // 1.1 - Busca por Produto (Peso 2)
+            let matchesProduto = false;
+            if (currentNiche === 'CONCESSIONARIA') {
+                const activeNiche = NICHES.CONCESSIONARIA;
+                const temMarca = activeNiche.marcas.some(m => upperText.includes(m));
+                const temModelo = activeNiche.marcas.some(m => {
+                    if (!activeNiche.modelos[m]) return false;
+                    return activeNiche.modelos[m].some(mod => {
+                        const reg = new RegExp('\\b' + mod + '\\b', 'i');
+                        return reg.test(upperText);
+                    });
+                });
+                const zeekrMatch = upperText.match(/\b(00[1-9]|[1-9]x)\b/i) || (upperText.includes('ZEEKR') && upperText.match(/\b(x)\b/i));
+                matchesProduto = temMarca || temModelo || !!zeekrMatch;
+            } else if (currentNiche === 'PNEUS') {
+                const activeNiche = NICHES.PNEUS;
+                const temMedida = upperText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
+                const temMarca = activeNiche.marcas.some(m => upperText.includes(m));
+                const temProduto = activeNiche.produtos.some(p => upperText.includes(p));
+                matchesProduto = temMedida || temMarca || temProduto;
+            } else if (currentNiche === 'AUTO_SERVICE') {
+                const activeNiche = NICHES.AUTO_SERVICE;
+                const temMarca = activeNiche.marcas.some(m => upperText.includes(m));
+                const temProduto = activeNiche.produtos.some(p => upperText.includes(p));
+                matchesProduto = temMarca || temProduto;
+            } else {
+                const activeNiche = NICHES.GENERICO;
+                matchesProduto = activeNiche.produtos.some(p => upperText.includes(p));
+            }
+
+            if (matchesProduto) {
+                score += 2;
+            }
+
+            const matchAny = (list) => list.some(word => upperText.includes(word));
+
+            // 1.2 - preco_negociacao (Peso 1)
+            const precoWords = ['PREÇO', 'PRECO', 'VALOR', 'CUSTA', 'CUSTO', 'ORÇAMENTO', 'ORCAMENTO', 'TABELA', 'NEGOCIAR', 'DESCONTO', 'QUANTO FICA', 'VALORES', 'COTAR', 'COTAÇÃO', 'COTACAO'];
+            if (matchAny(precoWords)) {
+                score += 1;
+            }
+
+            // 1.3 - Características e Detalhes (Peso 1)
+            const detalhesWords = ['CARACTERÍSTICA', 'CARACTERISTICA', 'DETALHE', 'FICHA TÉCNICA', 'FICHA TECNICA', 'VERSÃO', 'VERSAO', 'ANO', 'KM', 'MOTOR', 'COR', 'MANUAL', 'AUTOMÁTICO', 'AUTOMATICO', 'AUTONOMIA', 'BATERIA', 'ESPECIFICAÇÕES', 'ESPECIFICACOES', 'MARCA', 'MEDIDA', 'ARO', 'LARGURA', 'PERFIL', 'ÍNDICE', 'INDICE', 'PEÇA', 'PECA'];
+            if (matchAny(detalhesWords)) {
+                score += 1;
+            }
+
+            // 1.4 - Forma de Pagamento (Peso 1)
+            const pagamentoWords = ['FINANCIAMENTO', 'FINANCIAR', 'PARCELA', 'ENTRADA', 'CARTÃO', 'CARTAO', 'PIX', 'BOLETO', 'CONSÓRCIO', 'CONSORCIO', 'JUROS', 'TAXA', 'PAGAMENTO', 'AVISTA', 'À VISTA', 'A VISTA', 'PARCELADO', 'CRÉDITO', 'CREDITO', 'DÉBITO', 'DEBITO', 'CONDIÇÃO', 'CONDICAO'];
+            if (matchAny(pagamentoWords)) {
+                score += 1;
+            }
+
+            // 1.5 - Interesse em Visita/test-drive (Peso 3)
+            const visitaWords = ['VISITA', 'VISITAR', 'TEST DRIVE', 'TEST-DRIVE', 'TESTDRIVE', 'AGENDAR', 'AGENDAMENTO', 'TESTAR', 'ANDAR NO CARRO', 'IR NA LOJA', 'IR AÍ', 'IR AI', 'CONHECER O CARRO', 'ENDEREÇO', 'ENDERECO', 'ONDE FICA', 'LOCALIZAÇÃO', 'LOCALIZACAO', 'LEVAR O CARRO', 'MARCAR', 'HORÁRIO', 'HORARIO', 'AGENDA', 'COMPARECER'];
+            if (matchAny(visitaWords)) {
+                score += 3;
+            }
+
+            // 1.6 - Decidido a comprar (Peso 2)
+            const comprarWords = ['DECIDIDO', 'VOU COMPRAR', 'QUERO COMPRAR', 'COMPRAR HOJE', 'FECHAR NEGÓCIO', 'FECHAR NEGOCIO', 'COMPRAR AGORA', 'FECHAR HOJE', 'QUERO FECHAR', 'COMPRAREI', 'VOU LEVAR', 'QUERO LEVAR', 'FECHADO', 'CONTRATAR', 'RESERVAR', 'RESERVA'];
+            if (matchAny(comprarWords)) {
+                score += 2;
+            }
+
+            return score;
+        }
+
         // Função principal que agrupa por telefone (Lead)
         function processLeads() {
             const startDateStr = document.getElementById('startDate').value;
@@ -896,40 +975,36 @@
                     vendeu = vendeuPelasTags || !!s.venda;
                 }
 
-                // Lógica de Interesse / Qualificação (Negativos e Positivos)
+                // Lógica de Interesse / Qualificação por Score e Negativos
                 const temNeg = activeNiche.negativos.some(n => allText.includes(n));
-                let temInt = false;
-                if (currentNicheKey === 'CONCESSIONARIA') {
-                    const temMarca = activeNiche.marcas.some(m => allText.includes(m));
-                    const temModelo = !!modelo;
-                    const temProdutoCarro = activeNiche.produtos.some(p => allText.includes(p));
-                    const temTagTestDriveOuVisita = s.tagsName && Array.isArray(s.tagsName) &&
-                        s.tagsName.some(tag => {
-                            const tUpper = tag.toUpperCase();
-                            return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
-                        });
-                    temInt = (temMarca || temModelo || temProdutoCarro || temTagTestDriveOuVisita) && !temNeg;
-                } else {
-                    temInt = (activeNiche.produtos.some(p => allText.includes(p)) || activeNiche.marcas.some(m => allText.includes(m))) && !temNeg;
+                const score = calculateLeadScore(allText, currentNicheKey);
+                
+                let qualificado = false;
+                let temperatura = null;
+
+                if (!temNeg) {
+                    if (score >= 7) {
+                        temperatura = 'QUENTE';
+                        qualificado = true;
+                    } else if (score >= 4) {
+                        temperatura = 'MORNO';
+                        qualificado = true;
+                    } else if (score >= 1) {
+                        temperatura = 'FRIO';
+                        qualificado = true;
+                    }
                 }
 
-                // Temperatura
-                let isQuente = false;
-                if (temInt) {
-                    if (currentNicheKey === 'CONCESSIONARIA') {
-                        const temTagTestDriveOuVisita = s.tagsName && Array.isArray(s.tagsName) &&
-                            s.tagsName.some(tag => {
-                                const tUpper = tag.toUpperCase();
-                                return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
-                            });
-                        
-                        const termosTestDriveOuVisita = ['TEST-DRIVE', 'TEST DRIVE', 'VISITA', 'VISITAR', 'AGENDAR', 'AGENDAMENTO', 'CONHECER O CARRO', 'TESTAR'];
-                        const temTextoInteresse = termosTestDriveOuVisita.some(t => allText.includes(t));
-                        
-                        isQuente = temTagTestDriveOuVisita || temTextoInteresse || TERMOS_QUENTE.some(t => allText.includes(t));
-                    } else {
-                        isQuente = TERMOS_QUENTE.some(t => allText.includes(t));
-                    }
+                // Se possuir tag de test-drive ou visita (na concessionária), garante qualificação e temperatura Quente
+                const temTagTestDriveOuVisita = s.tagsName && Array.isArray(s.tagsName) &&
+                    s.tagsName.some(tag => {
+                        const tUpper = tag.toUpperCase();
+                        return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
+                    });
+
+                if (currentNicheKey === 'CONCESSIONARIA' && temTagTestDriveOuVisita) {
+                    qualificado = true;
+                    temperatura = 'QUENTE';
                 }
 
                 // Se o lead já existe, atualizamos os dados (consolidando)
@@ -942,9 +1017,16 @@
                     // Se em QUALQUER conversa ele converteu, ele é um lead convertido
                     if (vendeu) existing.vendeu = true;
 
-                    // Se qualificou em alguma, marca como qualificado
-                    if (temInt) existing.qualificado = true;
-                    if (isQuente) existing.quente = true;
+                    // Se qualificou em alguma, marca como qualificado e escolhe a maior temperatura
+                    if (qualificado) {
+                        existing.qualificado = true;
+                        const tempWeights = { 'FRIO': 1, 'MORNO': 2, 'QUENTE': 3 };
+                        const currentWeight = tempWeights[existing.temperatura] || 0;
+                        const newWeight = tempWeights[temperatura] || 0;
+                        if (newWeight > currentWeight) {
+                            existing.temperatura = temperatura;
+                        }
+                    }
 
                     // Acumula contagem de mensagens
                     existing.msgTotal += msgCount;
@@ -964,8 +1046,8 @@
                         name: leadName,
                         lastDate: sessionDate,
                         vendeu: vendeu,
-                        qualificado: temInt,
-                        quente: isQuente,
+                        qualificado: qualificado,
+                        temperatura: temperatura,
                         medida: medida,
                         modelo: modelo,
                         marca: marca,
@@ -978,8 +1060,10 @@
             // Converter Map para Array e pós-processar classificação
             globalProcessedLeads = Array.from(leadsMap.values()).map(lead => {
                 // Se interagiu bastante (5 ou mais mensagens no total), garante qualificação (seja Morno ou Quente)
-                if (lead.msgTotal >= 5) {
+                if (lead.msgTotal >= 5 && !lead.qualificado) {
                     lead.qualificado = true;
+                    // Se interagiu muito (8 ou mais mensagens), classifica como MORNO, senão FRIO
+                    lead.temperatura = lead.msgTotal >= 8 ? 'MORNO' : 'FRIO';
                 }
                 return lead;
             }).sort((a, b) => b.lastDate - a.lastDate);
@@ -990,8 +1074,9 @@
                 vendas: globalProcessedLeads.filter(l => l.vendeu).length,
                 qualificados: globalProcessedLeads.filter(l => l.qualificado).length,
                 nQualificados: globalProcessedLeads.filter(l => !l.qualificado).length,
-                quentes: globalProcessedLeads.filter(l => l.qualificado && l.quente).length,
-                mornos: globalProcessedLeads.filter(l => l.qualificado && !l.quente).length
+                quentes: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'QUENTE').length,
+                mornos: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'MORNO').length,
+                frios: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'FRIO').length
             };
 
             updateDashboard(stats);
@@ -1008,7 +1093,7 @@
             if (currentNicheKey === 'CONCESSIONARIA') {
                 if (subtitle) subtitle.innerText = "Métricas por Lead, Qualificação e Agendamentos/Visitas";
                 if (chartVendasTitle) chartVendasTitle.innerText = 'Conversão Test-Drive';
-                if (cardVendasTitle) cardVendasTitle.innerText = 'Possíveis Test-Drive';
+                if (cardVendasTitle) cardVendasTitle.innerText = 'Interesse Test-Drive';
                 if (thStatusVenda) thStatusVenda.innerText = 'Test-Drive / Visita';
                 if (thInteresse) thInteresse.innerText = 'Interesse (Marca/Modelo)';
             } else if (currentNicheKey === 'AUTO_SERVICE') {
@@ -1085,8 +1170,9 @@
                         case 'Não Vendeu': return !lead.vendeu;
                         case 'Qualificado': return lead.qualificado;
                         case 'Desqualificado': return !lead.qualificado;
-                        case 'Quente': return lead.qualificado && lead.quente;
-                        case 'Morno': return lead.qualificado && !lead.quente;
+                        case 'Quente': return lead.qualificado && lead.temperatura === 'QUENTE';
+                        case 'Morno': return lead.qualificado && lead.temperatura === 'MORNO';
+                        case 'Frio': return lead.qualificado && lead.temperatura === 'FRIO';
                         default: return true;
                     }
                 });
@@ -1153,8 +1239,8 @@
             subChart = new Chart(document.getElementById('chartSub'), {
                 type: 'pie',
                 data: {
-                    labels: ['Quente', 'Morno'],
-                    datasets: [{ data: [stats.quentes, stats.mornos], backgroundColor: ['#d32f2f', '#ffa726'] }]
+                    labels: ['Quente', 'Morno', 'Frio'],
+                    datasets: [{ data: [stats.quentes, stats.mornos, stats.frios], backgroundColor: ['#d32f2f', '#ffa726', '#1e3c72'] }]
                 },
                 options: commonOptions
             });
@@ -1193,7 +1279,13 @@
 
                 let tempHtml = '-';
                 if (lead.qualificado) {
-                    tempHtml = lead.quente ? `<span class="temp-quente">Quente 🔥</span>` : `<span class="temp-morno">Morno ❄️</span>`;
+                    if (lead.temperatura === 'QUENTE') {
+                        tempHtml = `<span class="temp-quente">Quente 🔥</span>`;
+                    } else if (lead.temperatura === 'MORNO') {
+                        tempHtml = `<span class="temp-morno">Morno ❄️</span>`;
+                    } else if (lead.temperatura === 'FRIO') {
+                        tempHtml = `<span class="temp-frio">Frio 🧊</span>`;
+                    }
                 }
 
                 // Interesse (Marca/Medida ou Marca/Modelo ou Serviço)
