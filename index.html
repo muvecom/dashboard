@@ -129,6 +129,17 @@
             font-weight: 800;
             color: #1e3c72;
             line-height: 1;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .chart-header .big-num:hover {
+            transform: scale(1.08);
+        }
+
+        .active-filter-num {
+            text-decoration: underline;
+            text-underline-offset: 4px;
         }
 
         .chart-canvas-wrapper {
@@ -165,6 +176,21 @@
             flex-direction: column;
             align-items: flex-start;
             border-left: 4px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .stat-card:hover {
+            background-color: #fafafa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .active-filter-card {
+            background-color: #eef2f9 !important;
+            border-bottom: 4px solid #2a5298 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }
 
         .stat-card h3 {
@@ -521,10 +547,10 @@
                 <div class="chart-box">
                     <div class="chart-header">
                         <div>
-                            <h4>Conversão Vendas</h4>
+                            <h4 id="chart-vendas-title">Conversão Vendas</h4>
                             <span style="font-size:0.8rem; color:#999">Base: Total Leads</span>
                         </div>
-                        <div class="big-num text-purple" id="pizza-vendas-val">0%</div>
+                        <div class="big-num text-purple" id="pizza-vendas-val" onclick="togglePieFilter('Vendeu')">0%</div>
                     </div>
                     <div class="chart-canvas-wrapper">
                         <canvas id="chartVendas"></canvas>
@@ -538,7 +564,7 @@
                             <h4>Qualificação</h4>
                             <span style="font-size:0.8rem; color:#999">Leads Qualificados</span>
                         </div>
-                        <div class="big-num text-green" id="pizza-qual-val">0</div>
+                        <div class="big-num text-green" id="pizza-qual-val" onclick="togglePieFilter('Qualificado')">0</div>
                     </div>
                     <div class="chart-canvas-wrapper">
                         <canvas id="chartMain"></canvas>
@@ -552,7 +578,7 @@
                             <h4>Temperatura</h4>
                             <span style="font-size:0.8rem; color:#999">Dos Qualificados</span>
                         </div>
-                        <div class="big-num text-red" id="pizza-quente-val">0</div>
+                        <div class="big-num text-red" id="pizza-quente-val" onclick="togglePieFilter('Quente')">0</div>
                     </div>
                     <div class="chart-canvas-wrapper">
                         <canvas id="chartSub"></canvas>
@@ -562,19 +588,19 @@
 
             <div class="section-title">Métricas de Leads (Pessoas Únicas)</div>
             <div class="stats-grid">
-                <div class="stat-card border-blue" onclick="resetFilter()" style="cursor:pointer">
+                <div class="stat-card border-blue" onclick="resetFilter()">
                     <h3>Total Leads Únicos</h3>
                     <div class="stat-value" id="count-leads">0</div>
                 </div>
-                <div class="stat-card border-purple">
-                    <h3>Vendas Realizadas (Leads)</h3>
+                <div class="stat-card border-purple" onclick="togglePieFilter('Vendeu')">
+                    <h3 id="card-vendas-title">Vendas Realizadas (Leads)</h3>
                     <div class="stat-value text-purple" id="count-vendas">0</div>
                 </div>
-                <div class="stat-card border-green">
+                <div class="stat-card border-green" onclick="togglePieFilter('Qualificado')">
                     <h3>Leads Qualificados</h3>
                     <div class="stat-value text-green" id="count-qual-leads">0</div>
                 </div>
-                <div class="stat-card border-red">
+                <div class="stat-card border-red" onclick="togglePieFilter('Quente')">
                     <h3>Leads Quentes</h3>
                     <div class="stat-value text-red" id="count-quente-leads">0</div>
                 </div>
@@ -587,10 +613,10 @@
                         <tr>
                             <th>Data/Hora (Última)</th>
                             <th>Lead (Telefone)</th>
-                            <th>Status Venda</th>
+                            <th id="th-status-venda" style="text-align:center">Status Venda</th>
                             <th>Qualificação</th>
                             <th>Temp.</th>
-                            <th>Interesse (Marca/Medida)</th>
+                            <th id="th-interesse">Interesse (Marca/Medida)</th>
                             <th>Total Msgs</th>
                             <th>Ação</th>
                         </tr>
@@ -612,10 +638,23 @@
                 negativos: ['FAROL', 'LANTERNA', 'MOTOR', 'PARACHOQUE', 'LATA', 'PINTURA', 'VIDRO']
             },
             CONCESSIONARIA: {
-                keywords: ['SEMINOVO', 'TEST DRIVE', 'FINANCIAMENTO', 'CARRO NOVO', 'USADO', 'VEÍCULO', 'VEICULO'],
-                produtos: ['CARRO', 'SEMINOVO', 'TEST DRIVE', 'FINANCIAMENTO', 'VEÍCULO', 'USADO', 'CONSÓRCIO', 'CONSORCIO'],
-                marcas: ['CHEVROLET', 'VOLKSWAGEN', 'FIAT', 'FORD', 'TOYOTA', 'HONDA', 'HYUNDAI', 'RENAULT', 'JEEP', 'NISSAN', 'BYD', 'GWM', 'CHERY', 'PEUGEOT', 'CITROEN'],
-                negativos: ['MOTO', 'BICICLETA', 'CAMINHÃO', 'TRATOR']
+                keywords: ['SEMINOVO', 'TEST DRIVE', 'TEST-DRIVE', 'FINANCIAMENTO', 'CARRO NOVO', 'USADO', 'VEÍCULO', 'VEICULO', 'CONCESSIONARIA', 'CONCESSIONÁRIA', 'ZEEKR'],
+                produtos: ['CARRO', 'SEMINOVO', 'TEST DRIVE', 'TEST-DRIVE', 'FINANCIAMENTO', 'VEÍCULO', 'VEICULO', 'USADO', 'CONSÓRCIO', 'CONSORCIO', 'VISITA', 'LOJA'],
+                marcas: ['CHEVROLET', 'VOLKSWAGEN', 'FIAT', 'FORD', 'TOYOTA', 'HONDA', 'HYUNDAI', 'RENAULT', 'JEEP', 'NISSAN', 'BYD', 'GWM', 'CHERY', 'PEUGEOT', 'CITROEN', 'ZEEKR'],
+                modelos: {
+                    'ZEEKR': ['001', 'X', '7X', '9X', '002', '007', '009', 'MIX'],
+                    'BYD': ['DOLPHIN', 'SEAL', 'SONIC', 'YUAN', 'SONG', 'KING', 'TAN', 'HAN'],
+                    'GWM': ['HAVAL', 'ORA', 'POER'],
+                    'TOYOTA': ['COROLLA', 'HILUX', 'YARIS', 'SW4', 'PRIUS', 'RAV4'],
+                    'HONDA': ['CIVIC', 'HR-V', 'CITY', 'FIT', 'WR-V', 'CR-V'],
+                    'FIAT': ['ARGO', 'CRONOS', 'TORO', 'FASTBACK', 'PULSE', 'MOBI', 'STRADA', 'DUCATO', 'UNO', 'PALIO'],
+                    'CHEVROLET': ['ONIX', 'PRISMA', 'TRACKER', 'S10', 'EQUINOX', 'SPIN', 'MONTANA', 'CRUZE', 'COBALT'],
+                    'VOLKSWAGEN': ['GOL', 'POLO', 'VIRTUS', 'T-CROSS', 'NIVUS', 'TAOS', 'AMAROK', 'SAVEIRO', 'JETTA', 'PASSAT'],
+                    'HYUNDAI': ['HB20', 'CRETA', 'TUCSON', 'IX35', 'SANTA FE'],
+                    'JEEP': ['COMPASS', 'RENEGADE', 'COMMANDER', 'WRANGLER'],
+                    'FORD': ['KA', 'FIESTA', 'FOCUS', 'RANGER', 'ECOSPORT', 'TERRITORY', 'BRONCO']
+                },
+                negativos: ['MOTO', 'BICICLETA', 'CAMINHÃO', 'TRATOR', 'PNEU', 'BALANC', 'ALINHA']
             },
             AUTO_SERVICE: {
                 keywords: ['REVISÃO', 'OFICINA', 'MOTOR', 'MECÂNICO', 'INJEÇÃO', 'CORREIA', 'EMBREAGEM', 'MECANICO'],
@@ -638,13 +677,30 @@
         let currentNicheKey = 'GENERICO';
         let activeNiche = NICHES.GENERICO;
 
-        function detectNiche(text) {
+        function detectNiche(text, dashboardName = '') {
             let scores = { PNEUS: 0, CONCESSIONARIA: 0, AUTO_SERVICE: 0 };
+            
+            // Check dashboard name for strong niche clues
+            const nameUpper = dashboardName.toUpperCase();
+            if (nameUpper.includes('PNEU')) {
+                scores.PNEUS += 50;
+            }
+            if (nameUpper.includes('ZEEKR') || nameUpper.includes('CONCESSIONARIA') || nameUpper.includes('VEICULO') || nameUpper.includes('CARRO') || nameUpper.includes('AUTO') || nameUpper.includes('MOTORS')) {
+                scores.CONCESSIONARIA += 30;
+            }
+            if (nameUpper.includes('OFICINA') || nameUpper.includes('MECANIC') || nameUpper.includes('SERVICE')) {
+                scores.AUTO_SERVICE += 30;
+            }
+
             for (let niche in scores) {
                 NICHES[niche].keywords.forEach(kw => {
-                    const regex = new RegExp(kw, 'gi');
+                    const regex = new RegExp('\\b' + kw + '\\b', 'gi');
                     const matches = text.match(regex);
-                    if (matches) scores[niche] += matches.length;
+                    if (matches) scores[niche] += matches.length * 2;
+                    
+                    // Fallback for substring matching
+                    const subMatches = (text.match(new RegExp(kw, 'gi')) || []).length;
+                    scores[niche] += subMatches;
                 });
             }
             let max = 0;
@@ -671,17 +727,17 @@
             const today = new Date();
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(today.getMonth() - 6);
-        
+
             const urlParams = new URLSearchParams(window.location.search);
             const erroParam = urlParams.get('erro');
             const nomeParam = urlParams.get('nome');
             const tokenParam = urlParams.get('token'); // Pegamos o token aqui
-        
+
             // Configuração visual inicial
             if (nomeParam) {
                 document.getElementById('dashboard-title').innerHTML = `<i class="fas fa-chart-line"></i> ${nomeParam}`;
             }
-        
+
             if (erroParam) {
                 let displayDate = erroParam;
                 if (erroParam.includes('-')) {
@@ -691,24 +747,24 @@
                 document.getElementById('bannerText').innerHTML = `O agente não está qualificando corretamente em <b>${displayDate}</b>...`;
                 document.getElementById('alertHojeBanner').classList.add('visible');
             }
-        
+
             document.getElementById('startDate').value = sixMonthsAgo.toISOString().split('T')[0];
             document.getElementById('endDate').value = today.toISOString().split('T')[0];
-        
+
             // LÓGICA DE CARREGAMENTO ÚNICO
             if (tokenParam) {
                 currentToken = tokenParam;
-                
+
                 // Limpa a URL sem disparar recarregamento ou eventos extras
                 const newUrl = window.location.pathname + window.location.search.replace(/[\?&]token=[^&]+/, '').replace(/^&/, '?');
                 window.history.replaceState({}, '', newUrl);
-        
+
                 // Chama o backend UMA ÚNICA VEZ
                 loadData();
             } else {
                 document.getElementById('tokenModal').classList.add('active');
             }
-        
+
             // Eventos de mudança (só disparam se já houver dados)
             document.getElementById('startDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
             document.getElementById('endDate').addEventListener('change', () => { if (globalRawSessions.length) processLeads(); });
@@ -750,7 +806,8 @@
                     const msgsArray = rawMsgs.filter(m => s.messages ? m.fromBot === true : !m.fromBot);
                     allTextSample += msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ") + " ";
                 });
-                detectNiche(allTextSample);
+                const nomeParam = new URLSearchParams(window.location.search).get('nome') || '';
+                detectNiche(allTextSample, nomeParam);
 
                 processLeads();
             } catch (error) {
@@ -786,32 +843,94 @@
                 const allText = msgsArray.map(m => (m.texto || "").toUpperCase()).join(" ");
                 const msgCount = msgsArray.length;
 
-                // Lógica de Venda (Prioridade: Tags com "Contains" -> Fallback: Objeto de Venda do Backend)
-                const vendeuPelasTags = s.tagsName && Array.isArray(s.tagsName) && 
-                                        s.tagsName.some(tag => {
-                                            const tagUpper = tag.toUpperCase();
-                                            return TERMOS_CHAVE_VENDA.some(termo => tagUpper.includes(termo));
-                                        });
+                // Extração de dados (medida de pneu ou modelo de veículo)
+                let medida = null;
+                let modelo = null;
+                if (currentNicheKey === 'PNEUS') {
+                    const medidaEncontrada = allText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
+                    medida = medidaEncontrada ? medidaEncontrada[0] : null;
+                } else if (currentNicheKey === 'CONCESSIONARIA') {
+                    // Primeiro, busca modelos Zeekr (001, x, 7x, 9x, 002, etc.)
+                    const zeekrModelRegex = /\b(00[1-9]|[1-9]x)\b/i;
+                    const zeekrMatch = allText.match(zeekrModelRegex);
+                    if (zeekrMatch) {
+                        modelo = zeekrMatch[0].toUpperCase();
+                    } else if (allText.includes('ZEEKR')) {
+                        const xMatch = allText.match(/\b(x)\b/i);
+                        if (xMatch) modelo = 'X';
+                    }
 
-                const vendeu = vendeuPelasTags || !!s.venda;
+                    // Se não achou ainda, busca nos modelos mapeados por marca
+                    if (!modelo) {
+                        for (let b in activeNiche.modelos) {
+                            if (allText.includes(b)) {
+                                const foundModel = activeNiche.modelos[b].find(mod => {
+                                    const reg = new RegExp('\\b' + mod + '\\b', 'i');
+                                    return reg.test(allText);
+                                });
+                                if (foundModel) {
+                                    modelo = foundModel;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                const marca = activeNiche.marcas.find(m => allText.includes(m));
 
-                // Lógica de Pneu (Negativos e Positivos)
+                // Lógica de Venda/Conversão adaptada por nicho
+                let vendeu = false;
+                if (currentNicheKey === 'CONCESSIONARIA') {
+                    // Para Concessionária, "conversão" é ter a tag de test-drive ou visita
+                    vendeu = s.tagsName && Array.isArray(s.tagsName) &&
+                        s.tagsName.some(tag => {
+                            const tUpper = tag.toUpperCase();
+                            return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
+                        });
+                } else {
+                    const vendeuPelasTags = s.tagsName && Array.isArray(s.tagsName) &&
+                        s.tagsName.some(tag => {
+                            const tagUpper = tag.toUpperCase();
+                            return TERMOS_CHAVE_VENDA.some(termo => tagUpper.includes(termo));
+                        });
+                    vendeu = vendeuPelasTags || !!s.venda;
+                }
+
+                // Lógica de Interesse / Qualificação (Negativos e Positivos)
                 const temNeg = activeNiche.negativos.some(n => allText.includes(n));
-                const temInt = (activeNiche.produtos.some(p => allText.includes(p)) || activeNiche.marcas.some(m => allText.includes(m))) && !temNeg;
+                let temInt = false;
+                if (currentNicheKey === 'CONCESSIONARIA') {
+                    const temMarca = activeNiche.marcas.some(m => allText.includes(m));
+                    const temModelo = !!modelo;
+                    const temProdutoCarro = activeNiche.produtos.some(p => allText.includes(p));
+                    const temTagTestDriveOuVisita = s.tagsName && Array.isArray(s.tagsName) &&
+                        s.tagsName.some(tag => {
+                            const tUpper = tag.toUpperCase();
+                            return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
+                        });
+                    temInt = (temMarca || temModelo || temProdutoCarro || temTagTestDriveOuVisita) && !temNeg;
+                } else {
+                    temInt = (activeNiche.produtos.some(p => allText.includes(p)) || activeNiche.marcas.some(m => allText.includes(m))) && !temNeg;
+                }
 
                 // Temperatura
                 let isQuente = false;
                 if (temInt) {
-                    isQuente = TERMOS_QUENTE.some(t => allText.includes(t));
+                    if (currentNicheKey === 'CONCESSIONARIA') {
+                        const temTagTestDriveOuVisita = s.tagsName && Array.isArray(s.tagsName) &&
+                            s.tagsName.some(tag => {
+                                const tUpper = tag.toUpperCase();
+                                return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
+                            });
+                        
+                        const termosTestDriveOuVisita = ['TEST-DRIVE', 'TEST DRIVE', 'VISITA', 'VISITAR', 'AGENDAR', 'AGENDAMENTO', 'CONHECER O CARRO', 'TESTAR'];
+                        const temTextoInteresse = termosTestDriveOuVisita.some(t => allText.includes(t));
+                        
+                        isQuente = temTagTestDriveOuVisita || temTextoInteresse || TERMOS_QUENTE.some(t => allText.includes(t));
+                    } else {
+                        isQuente = TERMOS_QUENTE.some(t => allText.includes(t));
+                    }
                 }
-
-                // Extração de dados
-                let medida = null;
-                if (currentNicheKey === 'PNEUS') {
-                    const medidaEncontrada = allText.match(/\d{3}[\/\s]\d{2}[\/\s]?R?\s?\d{2}/i);
-                    medida = medidaEncontrada ? medidaEncontrada[0] : null;
-                }
-                const marca = activeNiche.marcas.find(m => allText.includes(m));
 
                 // Se o lead já existe, atualizamos os dados (consolidando)
                 if (leadsMap.has(leadId)) {
@@ -820,7 +939,7 @@
                     // Mantém a data mais recente
                     if (sessionDate > existing.lastDate) existing.lastDate = sessionDate;
 
-                    // Se em QUALQUER conversa ele comprou, ele é um lead comprador
+                    // Se em QUALQUER conversa ele converteu, ele é um lead convertido
                     if (vendeu) existing.vendeu = true;
 
                     // Se qualificou em alguma, marca como qualificado
@@ -832,6 +951,7 @@
 
                     // Atualiza interesse se achou algo novo e antes era null
                     if (!existing.medida && medida) existing.medida = medida;
+                    if (!existing.modelo && modelo) existing.modelo = modelo;
                     if (!existing.marca && marca) existing.marca = marca;
 
                     // Atualiza ID da sessão para linkar a mais recente
@@ -847,6 +967,7 @@
                         qualificado: temInt,
                         quente: isQuente,
                         medida: medida,
+                        modelo: modelo,
                         marca: marca,
                         msgTotal: msgCount,
                         sessionId: s.id // Guarda o ID da última sessão para gerar link
@@ -854,8 +975,14 @@
                 }
             });
 
-            // Converter Map para Array
-            globalProcessedLeads = Array.from(leadsMap.values()).sort((a, b) => b.lastDate - a.lastDate);
+            // Converter Map para Array e pós-processar classificação
+            globalProcessedLeads = Array.from(leadsMap.values()).map(lead => {
+                // Se interagiu bastante (5 ou mais mensagens no total), garante qualificação (seja Morno ou Quente)
+                if (lead.msgTotal >= 5) {
+                    lead.qualificado = true;
+                }
+                return lead;
+            }).sort((a, b) => b.lastDate - a.lastDate);
 
             // Calcular estatísticas totais baseadas em LEADS ÚNICOS
             const stats = {
@@ -871,6 +998,33 @@
         }
 
         function updateDashboard(stats) {
+            // Adapt structural UI labels based on the detected niche
+            const subtitle = document.getElementById('dashboard-subtitle');
+            const chartVendasTitle = document.getElementById('chart-vendas-title');
+            const cardVendasTitle = document.getElementById('card-vendas-title');
+            const thStatusVenda = document.getElementById('th-status-venda');
+            const thInteresse = document.getElementById('th-interesse');
+
+            if (currentNicheKey === 'CONCESSIONARIA') {
+                if (subtitle) subtitle.innerText = "Métricas por Lead, Qualificação e Agendamentos/Visitas";
+                if (chartVendasTitle) chartVendasTitle.innerText = 'Conversão Test-Drive';
+                if (cardVendasTitle) cardVendasTitle.innerText = 'Possíveis Test-Drive';
+                if (thStatusVenda) thStatusVenda.innerText = 'Test-Drive / Visita';
+                if (thInteresse) thInteresse.innerText = 'Interesse (Marca/Modelo)';
+            } else if (currentNicheKey === 'AUTO_SERVICE') {
+                if (subtitle) subtitle.innerText = "Métricas por Lead, Qualificação e Conversão de Serviços";
+                if (chartVendasTitle) chartVendasTitle.innerText = 'Conversão Serviços';
+                if (cardVendasTitle) cardVendasTitle.innerText = 'Serviços Fechados';
+                if (thStatusVenda) thStatusVenda.innerText = 'Status Serviço';
+                if (thInteresse) thInteresse.innerText = 'Interesse (Serviço/Peça)';
+            } else {
+                if (subtitle) subtitle.innerText = "Métricas por Lead, Qualificação e Conversão de Vendas";
+                if (chartVendasTitle) chartVendasTitle.innerText = 'Conversão Vendas';
+                if (cardVendasTitle) cardVendasTitle.innerText = 'Vendas Realizadas (Leads)';
+                if (thStatusVenda) thStatusVenda.innerText = 'Status Venda';
+                if (thInteresse) thInteresse.innerText = currentNicheKey === 'PNEUS' ? 'Interesse (Marca/Medida)' : 'Interesse (Marca/Produto)';
+            }
+
             // Atualiza Cards
             document.getElementById('count-leads').innerText = stats.totalLeads;
             document.getElementById('count-vendas').innerText = stats.vendas;
@@ -897,13 +1051,34 @@
         }
 
         function togglePieFilter(label) {
-            if (activePieFilter === label) {
+            // Clean active classes
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter-card'));
+            document.querySelectorAll('.big-num').forEach(n => n.classList.remove('active-filter-num'));
+
+            // Map aliases (like 'Test-Drive' -> 'Vendeu')
+            let normalizedLabel = label;
+            if (label === 'Test-Drive' || label === 'Serviço Fechado') normalizedLabel = 'Vendeu';
+            if (label === 'Sem Test-Drive' || label === 'Não Fechou') normalizedLabel = 'Não Vendeu';
+
+            if (activePieFilter === normalizedLabel) {
                 activePieFilter = null;
             } else {
-                activePieFilter = label;
+                activePieFilter = normalizedLabel;
             }
 
             if (activePieFilter) {
+                // Highlight corresponding card and number
+                if (activePieFilter === 'Vendeu') {
+                    document.getElementById('count-vendas').closest('.stat-card').classList.add('active-filter-card');
+                    document.getElementById('pizza-vendas-val').classList.add('active-filter-num');
+                } else if (activePieFilter === 'Qualificado') {
+                    document.getElementById('count-qual-leads').closest('.stat-card').classList.add('active-filter-card');
+                    document.getElementById('pizza-qual-val').classList.add('active-filter-num');
+                } else if (activePieFilter === 'Quente') {
+                    document.getElementById('count-quente-leads').closest('.stat-card').classList.add('active-filter-card');
+                    document.getElementById('pizza-quente-val').classList.add('active-filter-num');
+                }
+
                 currentFilteredLeads = globalProcessedLeads.filter(lead => {
                     switch (activePieFilter) {
                         case 'Vendeu': return lead.vendeu;
@@ -937,12 +1112,22 @@
                 }
             };
 
-            // Gráfico de Vendas
+            // Gráfico de Vendas / Conversão
             if (chartVendas) chartVendas.destroy();
+            let labelVendas = 'Vendeu';
+            let labelNaoVendas = 'Não Vendeu';
+            if (currentNicheKey === 'CONCESSIONARIA') {
+                labelVendas = 'Test-Drive';
+                labelNaoVendas = 'Sem Test-Drive';
+            } else if (currentNicheKey === 'AUTO_SERVICE') {
+                labelVendas = 'Serviço Fechado';
+                labelNaoVendas = 'Não Fechou';
+            }
+
             chartVendas = new Chart(document.getElementById('chartVendas'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Vendeu', 'Não Vendeu'],
+                    labels: [labelVendas, labelNaoVendas],
                     datasets: [{
                         data: [stats.vendas, stats.totalLeads - stats.vendas],
                         backgroundColor: ['#7b1fa2', '#eeeeee'],
@@ -990,9 +1175,16 @@
 
             body.innerHTML = paginatedData.map(lead => {
                 // Formatação status venda
-                const vendaBadge = lead.vendeu ?
-                    `<span class="badge badge-venda"><i class="fas fa-check"></i> VENDA</span>` :
-                    `<span style="color:#ccc; font-size:0.8rem">--</span>`;
+                let vendaBadge = `<span style="color:#ccc; font-size:0.8rem">--</span>`;
+                if (lead.vendeu) {
+                    if (currentNicheKey === 'CONCESSIONARIA') {
+                        vendaBadge = `<span class="badge badge-venda"><i class="fas fa-car"></i> TEST-DRIVE</span>`;
+                    } else if (currentNicheKey === 'AUTO_SERVICE') {
+                        vendaBadge = `<span class="badge badge-venda"><i class="fas fa-wrench"></i> SERVIÇO</span>`;
+                    } else {
+                        vendaBadge = `<span class="badge badge-venda"><i class="fas fa-check"></i> VENDA</span>`;
+                    }
+                }
 
                 // Formatação qualificação e temp
                 const qualBadge = lead.qualificado ?
@@ -1004,10 +1196,14 @@
                     tempHtml = lead.quente ? `<span class="temp-quente">Quente 🔥</span>` : `<span class="temp-morno">Morno ❄️</span>`;
                 }
 
-                // Interesse
+                // Interesse (Marca/Medida ou Marca/Modelo ou Serviço)
                 let interesse = [];
                 if (lead.marca) interesse.push(`<b>${lead.marca}</b>`);
-                if (lead.medida) interesse.push(`<span class="medida-tag">${lead.medida}</span>`);
+                if (currentNicheKey === 'CONCESSIONARIA') {
+                    if (lead.modelo) interesse.push(`<span class="medida-tag">${lead.modelo}</span>`);
+                } else {
+                    if (lead.medida) interesse.push(`<span class="medida-tag">${lead.medida}</span>`);
+                }
                 const interesseHtml = interesse.length > 0 ? interesse.join(' ') : '<span style="color:#ccc">Genérico</span>';
 
                 // Limpar nome do telefone para exibição
@@ -1040,6 +1236,8 @@
 
         function resetFilter() {
             activePieFilter = null;
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter-card'));
+            document.querySelectorAll('.big-num').forEach(n => n.classList.remove('active-filter-num'));
             currentFilteredLeads = globalProcessedLeads;
             currentPage = 1;
             renderTable();
