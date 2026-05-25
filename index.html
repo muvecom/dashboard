@@ -991,18 +991,18 @@
                         qualificado = true;
                     } else if (score >= 1) {
                         temperatura = 'FRIO';
-                        qualificado = false; // Frios são desqualificados!
+                        qualificado = true;
                     }
                 }
 
-                // Se possuir tag de test-drive ou visita, garante qualificação e temperatura Quente automaticamente
+                // Se possuir tag de test-drive ou visita (na concessionária), garante qualificação e temperatura Quente
                 const temTagTestDriveOuVisita = s.tagsName && Array.isArray(s.tagsName) &&
                     s.tagsName.some(tag => {
                         const tUpper = tag.toUpperCase();
                         return tUpper.includes('TEST-DRIVE') || tUpper.includes('TEST DRIVE') || tUpper.includes('VISITA');
                     });
 
-                if (temTagTestDriveOuVisita) {
+                if (currentNicheKey === 'CONCESSIONARIA' && temTagTestDriveOuVisita) {
                     qualificado = true;
                     temperatura = 'QUENTE';
                 }
@@ -1017,17 +1017,15 @@
                     // Se em QUALQUER conversa ele converteu, ele é um lead convertido
                     if (vendeu) existing.vendeu = true;
 
-                    // Consolida se qualificou em alguma sessão (Morno ou Quente)
+                    // Se qualificou em alguma, marca como qualificado e escolhe a maior temperatura
                     if (qualificado) {
                         existing.qualificado = true;
-                    }
-
-                    // Escolhe a maior temperatura registrada entre todas as sessões do lead
-                    const tempWeights = { 'FRIO': 1, 'MORNO': 2, 'QUENTE': 3 };
-                    const currentWeight = tempWeights[existing.temperatura] || 0;
-                    const newWeight = tempWeights[temperatura] || 0;
-                    if (newWeight > currentWeight) {
-                        existing.temperatura = temperatura;
+                        const tempWeights = { 'FRIO': 1, 'MORNO': 2, 'QUENTE': 3 };
+                        const currentWeight = tempWeights[existing.temperatura] || 0;
+                        const newWeight = tempWeights[temperatura] || 0;
+                        if (newWeight > currentWeight) {
+                            existing.temperatura = temperatura;
+                        }
                     }
 
                     // Acumula contagem de mensagens
@@ -1061,10 +1059,11 @@
 
             // Converter Map para Array e pós-processar classificação
             globalProcessedLeads = Array.from(leadsMap.values()).map(lead => {
-                // Se interagiu bastante (5 ou mais mensagens no total), garante qualificação como MORNO
+                // Se interagiu bastante (5 ou mais mensagens no total), garante qualificação (seja Morno ou Quente)
                 if (lead.msgTotal >= 5 && !lead.qualificado) {
                     lead.qualificado = true;
-                    lead.temperatura = 'MORNO';
+                    // Se interagiu muito (8 ou mais mensagens), classifica como MORNO, senão FRIO
+                    lead.temperatura = lead.msgTotal >= 8 ? 'MORNO' : 'FRIO';
                 }
                 return lead;
             }).sort((a, b) => b.lastDate - a.lastDate);
@@ -1077,7 +1076,7 @@
                 nQualificados: globalProcessedLeads.filter(l => !l.qualificado).length,
                 quentes: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'QUENTE').length,
                 mornos: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'MORNO').length,
-                frios: globalProcessedLeads.filter(l => l.temperatura === 'FRIO').length
+                frios: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'FRIO').length
             };
 
             updateDashboard(stats);
