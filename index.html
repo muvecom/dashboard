@@ -846,7 +846,7 @@
                 console.error(error);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('tokenModal').classList.add('active');
-                alert("Erro ao carregar ou token inválido.");
+                alert("Erro ao carregar ou token inválido:\n" + error.toString());
             }
         }
 
