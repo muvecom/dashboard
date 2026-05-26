@@ -846,7 +846,12 @@
                 console.error(error);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('tokenModal').classList.add('active');
-                alert("Erro ao carregar ou token inválido:\n" + error.toString());
+                let errMsg = error.toString();
+                if (errMsg.includes("Unexpected end of JSON input") || errMsg.includes("json")) {
+                    alert("Erro ao carregar os dados.\n\nIsso ocorre se o token for inválido OU se o limite de requisições da API da Helena (Rate Limit) foi atingido. Aguarde 1 minuto e tente novamente.\n\nDetalhes: " + errMsg);
+                } else {
+                    alert("Erro ao carregar ou token inválido:\n" + errMsg);
+                }
             }
         }
 
