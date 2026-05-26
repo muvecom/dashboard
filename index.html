@@ -162,7 +162,7 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -240,6 +240,14 @@
 
         .text-purple {
             color: #7b1fa2;
+        }
+
+        .text-orange {
+            color: #f57c00;
+        }
+
+        .text-blue {
+            color: #1e3c72;
         }
 
         /* TABELA DE DADOS */
@@ -416,17 +424,28 @@
         }
 
         /* Responsividade básica */
-        @media (max-width: 1000px) {
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
 
-            .charts-row,
+        @media (max-width: 1000px) {
+            .charts-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
         @media (max-width: 600px) {
-
-            .charts-row,
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
             .stats-grid {
                 grid-template-columns: 1fr;
             }
@@ -608,6 +627,14 @@
                 <div class="stat-card border-red" onclick="togglePieFilter('Quente')">
                     <h3>Leads Quentes</h3>
                     <div class="stat-value text-red" id="count-quente-leads">0</div>
+                </div>
+                <div class="stat-card border-orange" onclick="togglePieFilter('Morno')">
+                    <h3>Leads Mornos</h3>
+                    <div class="stat-value text-orange" id="count-morno-leads">0</div>
+                </div>
+                <div class="stat-card border-blue" onclick="togglePieFilter('Frio')">
+                    <h3>Leads Frios</h3>
+                    <div class="stat-value text-blue" id="count-frio-leads">0</div>
                 </div>
             </div>
 
@@ -983,7 +1010,7 @@
                 let temperatura = null;
 
                 if (!temNeg) {
-                    if (score >= 7) {
+                    if (score >= 6) {
                         temperatura = 'QUENTE';
                         qualificado = true;
                     } else if (score >= 4) {
@@ -991,7 +1018,7 @@
                         qualificado = true;
                     } else if (score >= 1) {
                         temperatura = 'FRIO';
-                        qualificado = false; // Frios são desqualificados!
+                        qualificado = true;
                     }
                 }
 
@@ -1061,8 +1088,8 @@
 
             // Converter Map para Array e pós-processar classificação
             globalProcessedLeads = Array.from(leadsMap.values()).map(lead => {
-                // Se interagiu bastante (5 ou mais mensagens no total), garante qualificação como MORNO
-                if (lead.msgTotal >= 5 && !lead.qualificado) {
+                // Se interagiu bastante (5 ou mais mensagens no total), garante qualificação como pelo menos MORNO
+                if (lead.msgTotal >= 5 && (!lead.qualificado || lead.temperatura === 'FRIO')) {
                     lead.qualificado = true;
                     lead.temperatura = 'MORNO';
                 }
@@ -1077,7 +1104,7 @@
                 nQualificados: globalProcessedLeads.filter(l => !l.qualificado).length,
                 quentes: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'QUENTE').length,
                 mornos: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'MORNO').length,
-                frios: globalProcessedLeads.filter(l => l.temperatura === 'FRIO').length
+                frios: globalProcessedLeads.filter(l => l.qualificado && l.temperatura === 'FRIO').length
             };
 
             updateDashboard(stats);
@@ -1116,6 +1143,8 @@
             document.getElementById('count-vendas').innerText = stats.vendas;
             document.getElementById('count-qual-leads').innerText = stats.qualificados;
             document.getElementById('count-quente-leads').innerText = stats.quentes;
+            document.getElementById('count-morno-leads').innerText = stats.mornos;
+            document.getElementById('count-frio-leads').innerText = stats.frios;
 
             // Atualiza números nos gráficos
             document.getElementById('pizza-vendas-val').innerText = Math.round((stats.vendas / stats.totalLeads * 100) || 0) + '%';
@@ -1163,6 +1192,10 @@
                 } else if (activePieFilter === 'Quente') {
                     document.getElementById('count-quente-leads').closest('.stat-card').classList.add('active-filter-card');
                     document.getElementById('pizza-quente-val').classList.add('active-filter-num');
+                } else if (activePieFilter === 'Morno') {
+                    document.getElementById('count-morno-leads').closest('.stat-card').classList.add('active-filter-card');
+                } else if (activePieFilter === 'Frio') {
+                    document.getElementById('count-frio-leads').closest('.stat-card').classList.add('active-filter-card');
                 }
 
                 currentFilteredLeads = globalProcessedLeads.filter(lead => {
@@ -1240,8 +1273,8 @@
             subChart = new Chart(document.getElementById('chartSub'), {
                 type: 'pie',
                 data: {
-                    labels: ['Quente', 'Morno'],
-                    datasets: [{ data: [stats.quentes, stats.mornos], backgroundColor: ['#d32f2f', '#ffa726'] }]
+                    labels: ['Quente', 'Morno', 'Frio'],
+                    datasets: [{ data: [stats.quentes, stats.mornos, stats.frios], backgroundColor: ['#d32f2f', '#ffa726', '#1e3c72'] }]
                 },
                 options: commonOptions
             });
